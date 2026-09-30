@@ -1,9 +1,13 @@
+# AgriSens backend — dépôt de l'API Django REST + MySQL.
+# Secrets et environnements :
 .env
 .env.*
 !.env.example
 __pycache__/
 *.py[cod]
 .venv/
+.venv*/
+tools/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

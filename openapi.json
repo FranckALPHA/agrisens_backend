@@ -1,0 +1,270 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "API AgriSens",
+        "version": "0.1.0",
+        "description": "API REST AgriSens (Django 5.2 LTS + DRF + MySQL spatial). Mise en relation d'agriculteurs, acheteurs, ingénieurs et livreurs au Cameroun."
+    },
+    "paths": {
+        "/api/v1/dev/horloge/": {
+            "post": {
+                "operationId": "dev_horloge_create",
+                "description": "Décale l'heure ou la fige pour tester les expirations et délais.",
+                "summary": "Décaler ou figer l'horloge (dev/test)",
+                "tags": [
+                    "dev"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "decalage_minutes": {
+                                        "type": "integer"
+                                    },
+                                    "date_iso": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Horloge mise à jour"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "dev_horloge_destroy",
+                "description": "Rétablit le temps réel.",
+                "summary": "Réinitialiser l'horloge (dev/test)",
+                "tags": [
+                    "dev"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Horloge réinitialisée"
+                    }
+                }
+            }
+        },
+        "/api/v1/dev/taches/{nom}/": {
+            "post": {
+                "operationId": "dev_taches_create",
+                "description": "Déclenchement immédiat d'une tâche de fond pour les tests E2E.",
+                "summary": "Exécuter une tâche planifiée immédiatement (dev/test)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "nom",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "dev"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReponseTache"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Tâche inconnue"
+                    }
+                }
+            }
+        },
+        "/api/v1/parametres/publics/": {
+            "get": {
+                "operationId": "parametres_publics_retrieve",
+                "description": "Retourne la liste des paramètres nécessaires aux clients (frais de livraison, plafonds, tolérances, limites de fichiers).",
+                "summary": "Obtenir les paramètres publics de la plateforme",
+                "tags": [
+                    "parametres"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dictionnaire des paramètres publics avec leurs valeurs courantes"
+                    }
+                }
+            }
+        },
+        "/api/v1/referentiels/{type_ref}/": {
+            "get": {
+                "operationId": "referentiels_list",
+                "description": "Retourne la liste des entrées actives d'un référentiel (region, unite, categorie_produit, type_sol, specialite, culture).",
+                "summary": "Lister un référentiel par type",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "type_ref",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "referentiels"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Referentiel"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Référentiel introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/sante/": {
+            "get": {
+                "operationId": "sante_retrieve",
+                "description": "Indique que le processus HTTP répond.",
+                "summary": "Santé de l'API (liveness)",
+                "tags": [
+                    "sante"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API en marche"
+                    }
+                }
+            }
+        },
+        "/api/v1/sante/pret/": {
+            "get": {
+                "operationId": "sante_pret_retrieve",
+                "description": "Vérifie la connexion MySQL et l'absence de migrations en attente.",
+                "summary": "Disponibilité de l'API (readiness)",
+                "tags": [
+                    "sante"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API prête à servir"
+                    },
+                    "503": {
+                        "description": "Base inaccessible ou migrations en attente"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Referentiel": {
+                "type": "object",
+                "description": "Représentation d'une entrée de référentiel.",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "Identifiant code stable utilisé par les autres entités",
+                        "maxLength": 50
+                    },
+                    "libelle": {
+                        "type": "string",
+                        "description": "Libellé affiché aux utilisateurs",
+                        "maxLength": 100
+                    },
+                    "ordre": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "description": "Ordre de tri pour l'affichage"
+                    }
+                },
+                "required": [
+                    "code",
+                    "libelle"
+                ]
+            },
+            "ReponseTache": {
+                "type": "object",
+                "properties": {
+                    "tache": {
+                        "type": "string"
+                    },
+                    "statut": {
+                        "type": "string"
+                    },
+                    "resultat": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "resultat",
+                    "statut",
+                    "tache"
+                ]
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

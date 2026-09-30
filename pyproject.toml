@@ -1,0 +1,71 @@
+[project]
+name = "agrisens-backend"
+version = "0.1.0"
+description = "API AgriSens (Django 5.2 + DRF + MySQL spatial)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "django>=5.2,<5.3",
+    "djangorestframework",
+    "drf-spectacular",
+    "django-environ",
+    "django-cors-headers",
+    "mysqlclient",
+    "pymysql",
+    "cryptography",
+    "argon2-cffi",
+    "pyjwt",
+    "shapely",
+    "pyproj",
+    "httpx",
+    "apscheduler",
+    "python-json-logger",
+    "pillow",
+    "filetype",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-django",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "django-stubs",
+    "djangorestframework-stubs",
+    "time-machine",
+    "pre-commit",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["config", "commun", "apps", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# Les settings Django définissent des constantes en majuscules, normal.
+"config/settings/*.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[[tool.mypy.overrides]]
+module = "apps.*.migrations.*"
+ignore_errors = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+testpaths = ["tests"]
+addopts = "--reuse-db"
+markers = [
+    "unit: tests rapides, sans base de données",
+    "integration: tests nécessitant MySQL (base agrisens_test)",
+]
