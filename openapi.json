@@ -6,6 +6,188 @@
         "description": "API REST AgriSens (Django 5.2 LTS + DRF + MySQL spatial). Mise en relation d'agriculteurs, acheteurs, ingénieurs et livreurs au Cameroun."
     },
     "paths": {
+        "/api/v1/auth/connexion/": {
+            "post": {
+                "operationId": "auth_connexion_create",
+                "description": "Identifiant : téléphone E.164 ou email. Message identique si le compte n'existe pas (anti-énumération). Compte suspendu → 403 compte_suspendu.",
+                "summary": "Se connecter",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConnexionRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReponseSession"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "401": {
+                        "description": "identifiants_invalides"
+                    },
+                    "403": {
+                        "description": "compte_suspendu"
+                    },
+                    "429": {
+                        "description": "limite_debit_atteinte"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/deconnexion/": {
+            "post": {
+                "operationId": "auth_deconnexion_create",
+                "description": "POST /auth/deconnexion — révoque la session courante et purge le cookie.",
+                "summary": "Se déconnecter",
+                "tags": [
+                    "auth"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Session révoquée, cookie supprimé"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/demande-reinitialisation/": {
+            "post": {
+                "operationId": "auth_demande_reinitialisation_create",
+                "description": "L'administrateur vérifie l'identité par téléphone puis génère un mot de passe temporaire (F-03). Réponse identique que le compte existe ou non.",
+                "summary": "Demander une réinitialisation de mot de passe",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DemandeReinitialisationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReponseMessage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/inscription/": {
+            "post": {
+                "operationId": "auth_inscription_create",
+                "description": "Rôles autorisés : agriculteur, acheteur, ingenieur_agronome, livreur. L'ingénieur est créé en attente de validation administrateur (D-13). Établit la session : jeton d'accès dans la réponse, jeton de rafraîchissement en cookie httpOnly.",
+                "summary": "Créer un compte",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InscriptionRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReponseSession"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "description": "compte_existant (téléphone ou email déjà utilisé)"
+                    },
+                    "422": {
+                        "description": "validation_invalide / telephone_invalide / role_inconnu"
+                    },
+                    "429": {
+                        "description": "limite_debit_atteinte"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/rafraichir/": {
+            "post": {
+                "operationId": "auth_rafraichir_create",
+                "description": "Utilise le cookie httpOnly, révoque le jeton présenté (rotation) et établit une nouvelle session. Réutilisation d'un jeton déjà tourné → révocation de toutes les sessions de l'utilisateur.",
+                "summary": "Renouveler la session",
+                "tags": [
+                    "auth"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReponseSession"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "401": {
+                        "description": "session_invalide / sessions_revoquees / session_expiree"
+                    },
+                    "403": {
+                        "description": "compte_suspendu"
+                    }
+                }
+            }
+        },
         "/api/v1/dev/horloge": {
             "post": {
                 "operationId": "dev_horloge_create",
@@ -229,10 +411,568 @@
                     }
                 }
             }
+        },
+        "/api/v1/utilisateurs/moi/": {
+            "get": {
+                "operationId": "utilisateurs_moi_retrieve",
+                "description": "GET/PATCH /utilisateurs/moi — profil personnel, y compris compte en attente.",
+                "summary": "Consulter son profil",
+                "tags": [
+                    "utilisateurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Utilisateur"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "utilisateurs_moi_partial_update",
+                "description": "Nom, email, région, téléphone ; le rôle n'est jamais modifiable ici.",
+                "summary": "Modifier son profil",
+                "tags": [
+                    "utilisateurs"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedMiseAJourMoiRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Utilisateur"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "description": "compte_existant"
+                    },
+                    "422": {
+                        "description": "validation_invalide / telephone_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/utilisateurs/moi/adresses/": {
+            "get": {
+                "operationId": "utilisateurs_moi_adresses_list",
+                "description": "GET/POST /utilisateurs/moi/adresses.",
+                "summary": "Lister ses adresses",
+                "tags": [
+                    "utilisateurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Adresse"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "utilisateurs_moi_adresses_create",
+                "description": "GET/POST /utilisateurs/moi/adresses.",
+                "summary": "Ajouter une adresse",
+                "tags": [
+                    "utilisateurs"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AdresseCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Adresse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "422": {
+                        "description": "geometrie_invalide / hors_emprise_cameroun"
+                    }
+                }
+            }
+        },
+        "/api/v1/utilisateurs/moi/adresses/{id}/": {
+            "patch": {
+                "operationId": "utilisateurs_moi_adresses_partial_update",
+                "description": "PATCH/DELETE /utilisateurs/moi/adresses/{id} — propriétaire uniquement (sinon 404).",
+                "summary": "Modifier son adresse",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "utilisateurs"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedAdresseModificationRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Adresse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable (autre propriétaire ou inexistante)"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "utilisateurs_moi_adresses_destroy",
+                "description": "PATCH/DELETE /utilisateurs/moi/adresses/{id} — propriétaire uniquement (sinon 404).",
+                "summary": "Supprimer son adresse",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "utilisateurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Adresse supprimée"
+                    }
+                }
+            }
+        },
+        "/api/v1/utilisateurs/moi/mot-de-passe/": {
+            "put": {
+                "operationId": "utilisateurs_moi_mot_de_passe_update",
+                "description": "PUT /utilisateurs/moi/mot-de-passe — remet doit_changer_mot_de_passe à false.",
+                "summary": "Changer son mot de passe",
+                "tags": [
+                    "utilisateurs"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotDePasseRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Utilisateur"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "422": {
+                        "description": "mot_de_passe_incorrect / validation_invalide"
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
+            "Adresse": {
+                "type": "object",
+                "description": "ADRESSE — position en GeoJSON Point (conventions §3).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "libelle": {
+                        "type": "string",
+                        "description": "Libellé court : « Domicile », « Boutique »…",
+                        "maxLength": 100
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Repères (les adresses postales sont rares au Cameroun)"
+                    },
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                }
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    },
+                    "ville": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "region": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "id",
+                    "libelle",
+                    "maj_le",
+                    "position",
+                    "region",
+                    "ville"
+                ]
+            },
+            "AdresseCreationRequest": {
+                "type": "object",
+                "description": "ADRESSE — position en GeoJSON Point (conventions §3).",
+                "properties": {
+                    "libelle": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Libellé court : « Domicile », « Boutique »…",
+                        "maxLength": 100
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Repères (les adresses postales sont rares au Cameroun)"
+                    },
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                }
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    },
+                    "ville": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "region": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "libelle",
+                    "position",
+                    "region",
+                    "ville"
+                ]
+            },
+            "ConnexionRequest": {
+                "type": "object",
+                "description": "POST /auth/connexion — téléphone E.164 ou email + mot de passe.",
+                "properties": {
+                    "identifiant": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                    },
+                    "mot_de_passe": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "identifiant",
+                    "mot_de_passe"
+                ]
+            },
+            "DemandeReinitialisationRequest": {
+                "type": "object",
+                "description": "POST /auth/demande-reinitialisation (Q-23) — téléphone du compte.",
+                "properties": {
+                    "telephone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20
+                    }
+                },
+                "required": [
+                    "telephone"
+                ]
+            },
+            "InscriptionRequest": {
+                "type": "object",
+                "description": "POST /auth/inscription — rôles agriculteur, acheteur, ingénieur, livreur.",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20
+                    },
+                    "email": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "maxLength": 255
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "mot_de_passe": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 8
+                    },
+                    "role": {
+                        "$ref": "#/components/schemas/InscriptionRoleEnum"
+                    },
+                    "region": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "mot_de_passe",
+                    "nom",
+                    "role",
+                    "telephone"
+                ]
+            },
+            "InscriptionRoleEnum": {
+                "enum": [
+                    "acheteur",
+                    "agriculteur",
+                    "ingenieur_agronome",
+                    "livreur"
+                ],
+                "type": "string",
+                "description": "* `acheteur` - acheteur\n* `agriculteur` - agriculteur\n* `ingenieur_agronome` - ingenieur_agronome\n* `livreur` - livreur"
+            },
+            "MotDePasseRequest": {
+                "type": "object",
+                "description": "PUT /utilisateurs/moi/mot-de-passe.",
+                "properties": {
+                    "mot_de_passe_actuel": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1
+                    },
+                    "nouveau_mot_de_passe": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 8
+                    }
+                },
+                "required": [
+                    "mot_de_passe_actuel",
+                    "nouveau_mot_de_passe"
+                ]
+            },
+            "PatchedAdresseModificationRequest": {
+                "type": "object",
+                "description": "PATCH : tous les champs facultatifs.",
+                "properties": {
+                    "libelle": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                }
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    },
+                    "ville": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "region": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    }
+                }
+            },
+            "PatchedMiseAJourMoiRequest": {
+                "type": "object",
+                "description": "PATCH /utilisateurs/moi — nom, email, région, téléphone ; jamais le rôle.",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "email": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "region": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 100
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20
+                    }
+                }
+            },
             "Referentiel": {
                 "type": "object",
                 "description": "Représentation d'une entrée de référentiel.",
@@ -257,6 +997,47 @@
                 "required": [
                     "code",
                     "libelle"
+                ]
+            },
+            "ReponseMessage": {
+                "type": "object",
+                "description": "Réponse neutre uniforme (demande de réinitialisation, Q-23).",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "message"
+                ]
+            },
+            "ReponseSession": {
+                "type": "object",
+                "description": "Corps commun de /auth/inscription, /connexion et /rafraichir.\n\nSert uniquement à documenter le schéma OpenAPI ; la réponse est construite\ndans `views._reponse_session`.",
+                "properties": {
+                    "utilisateur": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Utilisateur"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "jeton_acces": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "expire_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "expire_le",
+                    "jeton_acces",
+                    "utilisateur"
                 ]
             },
             "ReponseTache": {
@@ -331,6 +1112,110 @@
                     "migrations_en_attente",
                     "statut"
                 ]
+            },
+            "StatutCompteEnum": {
+                "enum": [
+                    "actif",
+                    "en_attente_validation",
+                    "suspendu",
+                    "anonymise"
+                ],
+                "type": "string",
+                "description": "* `actif` - Actif\n* `en_attente_validation` - En attente de validation\n* `suspendu` - Suspendu\n* `anonymise` - Anonymisé"
+            },
+            "Utilisateur": {
+                "type": "object",
+                "description": "Représentation de « moi » pour tout utilisateur connecté.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Nom complet ou raison sociale"
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Numéro de téléphone au format E.164 (+237XXXXXXXXX)"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Adresse email facultative"
+                    },
+                    "role": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/UtilisateurRoleEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "statut_compte": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutCompteEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "region": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "doit_changer_mot_de_passe": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "reinitialisation_demandee_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "derniere_connexion_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "derniere_connexion_le",
+                    "doit_changer_mot_de_passe",
+                    "email",
+                    "id",
+                    "nom",
+                    "region",
+                    "reinitialisation_demandee_le",
+                    "role",
+                    "statut_compte",
+                    "telephone"
+                ]
+            },
+            "UtilisateurRoleEnum": {
+                "enum": [
+                    "agriculteur",
+                    "acheteur",
+                    "ingenieur_agronome",
+                    "livreur",
+                    "admin",
+                    "super_admin"
+                ],
+                "type": "string",
+                "description": "* `agriculteur` - Agriculteur\n* `acheteur` - Acheteur\n* `ingenieur_agronome` - Ingénieur agronome\n* `livreur` - Livreur\n* `admin` - Administrateur\n* `super_admin` - Super administrateur"
             }
         },
         "securitySchemes": {

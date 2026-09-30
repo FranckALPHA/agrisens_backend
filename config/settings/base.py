@@ -96,6 +96,10 @@ JWT_DUREE_ACCES_MIN = env.int("JWT_DUREE_ACCES_MIN", default=15)
 JWT_DUREE_RAFRAICHISSEMENT_JOURS = env.int("JWT_DUREE_RAFRAICHISSEMENT_JOURS", default=30)
 CODE_REMISE_CLE = env.str("CODE_REMISE_CLE")
 
+# Cookie de rafraîchissement (journal Q-25) : Secure seulement dès staging,
+# sinon le navigateur rejette le cookie sur http://localhost en local et E2E.
+COOKIE_AUTH_SECURE = ENVIRONNEMENT in ("staging", "production")
+
 # --- Intégrations externes ---
 # NotchPay
 NOTCHPAY_MODE = env.str("NOTCHPAY_MODE", default="factice")
@@ -197,6 +201,12 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "commun.exceptions.gestionnaire_exceptions_drf",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Limitation de débit (conventions §6) : valeurs ajustables par variables d'environnement.
+    "DEFAULT_THROTTLE_RATES": {
+        "connexion": env.str("DEBIT_CONNEXION", default="10/min"),
+        "inscription": env.str("DEBIT_INSCRIPTION", default="10/min"),
+        "reinitialisation": env.str("DEBIT_REINITIALISATION", default="5/min"),
+    },
 }
 
 # --- drf-spectacular (OpenAPI 3) ---

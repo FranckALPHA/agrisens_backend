@@ -47,6 +47,8 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 # Les settings Django définissent des constantes en majuscules, normal.
 "config/settings/*.py" = ["E402"]
+# Les migrations sont générées par Django : on ne maîtrise pas la longueur.
+"apps/*/migrations/*.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
