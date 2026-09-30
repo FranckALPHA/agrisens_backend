@@ -1,6 +1,7 @@
 # AgriSens — Backend
 
-API FastAPI + SQLAlchemy + MySQL spatial de la plateforme AgriSens.
+API Django (Django REST Framework) + MySQL spatial de la plateforme
+AgriSens.
 
 Ce dépôt est vide à dessein : le code est produit feature par feature
 à partir de la spécification située dans `../docs/` (même espace de

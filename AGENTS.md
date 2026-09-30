@@ -1,8 +1,9 @@
 # AGENTS.md — agrisens-backend
 
-Dépôt de l'API AgriSens (FastAPI, SQLAlchemy 2, MySQL 8.4 spatial,
-Alembic, JWT, NotchPay, Groq). **Pas de Docker** : MySQL installé
-nativement, API et worker lancés avec `uv run` (journal Q-31).
+Dépôt de l'API AgriSens (Django 5.2 LTS, Django REST Framework,
+MySQL 8.4 spatial, JWT, NotchPay, Groq — journal Q-32). **Pas de Docker** : MySQL installé
+nativement, API et worker lancés avec `uv run python manage.py …`
+(journal Q-31).
 
 ## À lire avant tout
 
@@ -29,21 +30,26 @@ nativement, API et worker lancés avec `uv run` (journal Q-31).
 ## Rappels propres au backend
 
 - Arborescence imposée : `../docs/10-dossier-final-agent-code.md` §3.
-- Logique métier dans `service.py` uniquement ; routes minces.
+- Une app Django par module dans `apps/` ; logique métier dans
+  `services.py` uniquement ; vues DRF minces ; rien dans `save()`, les
+  signaux ou les serializers.
+- `AUTH_USER_MODEL = "utilisateurs.Utilisateur"` dès la première
+  migration.
 - Tarifs, taux, délais, quotas : service `parametres`, jamais en dur.
 - Paiement confirmé uniquement par webhook NotchPay signé, idempotent.
-- Géométries SRID 4326, conversions dans `app/shared/geo.py`.
-- Une migration Alembic par changement de schéma.
+- Géométries SRID 4326, `commun/geo.py` et `commun/champs_geo.py` ;
+  **pas de GeoDjango**.
+- Une migration Django par changement de schéma.
 - Aucun appel réseau réel en test (NotchPay, Groq : adaptateurs factices).
-- Après tout changement de route : régénérer `openapi.json` (le
-  frontend en dérive ses types).
+- Après tout changement de route : régénérer `openapi.json` avec
+  drf-spectacular (le frontend en dérive ses types).
 
 ## Commandes
 
 À compléter par F-00 avec les commandes réelles :
 
     # créer les bases (scripts/init_bases.sql)
-    # démarrer l'API et le worker (uv run …)
+    # démarrer l'API (manage.py runserver) et le worker (manage.py worker)
     # appliquer les migrations
     # créer une migration
     # charger les données de démonstration
