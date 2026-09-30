@@ -6,8 +6,13 @@ from config.settings.base import _preparer_db_config
 DEBUG = False
 ENVIRONNEMENT = "test"
 
-# Utilise la base agrisens_test si spécifiée
-if DATABASE_URL_TEST:  # noqa: F405
+# Utilise la base agrisens_e2e si spécifiée pour les tests E2E Playwright, sinon agrisens_test
+url_db = env.str("DATABASE_URL", default="")  # noqa: F405
+if "agrisens_e2e" in url_db:
+    DATABASES = {  # noqa: F405
+        "default": _preparer_db_config(url_db)  # noqa: F405
+    }
+elif DATABASE_URL_TEST:  # noqa: F405
     DATABASES = {  # noqa: F405
         "default": _preparer_db_config(DATABASE_URL_TEST)  # noqa: F405
     }

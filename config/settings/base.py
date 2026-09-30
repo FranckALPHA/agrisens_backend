@@ -44,11 +44,19 @@ if variables_manquantes:
 SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 
 # --- Hôtes et réseau ---
+APPEND_SLASH = False
 ALLOWED_HOSTS: list[str] = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 # CORS
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS: list[str] = env.list(
-    "CORS_ORIGINES", default=["http://localhost:5173", "http://127.0.0.1:5173"]
+    "CORS_ORIGINES",
+    default=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+    ],
 )
 FRONTEND_URL = env.str("FRONTEND_URL", default="http://localhost:5173")
 API_URL_PUBLIQUE = env.str("API_URL_PUBLIQUE", default="http://localhost:8000")

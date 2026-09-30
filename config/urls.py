@@ -16,8 +16,8 @@ handler500 = "commun.exceptions.vue_erreur_500"
 
 api_v1_patterns: list[URLPattern | URLResolver] = [
     # Santé (liveness et readiness)
-    re_path(r"^sante/?$", VueSante.as_view(), name="sante"),
-    re_path(r"^sante/pret/?$", VueSantePret.as_view(), name="sante_pret"),
+    path("sante", VueSante.as_view(), name="sante"),
+    path("sante/pret", VueSantePret.as_view(), name="sante_pret"),
     # Modules métier
     path("", include("apps.referentiels.urls")),
     path("", include("apps.administration.urls")),
@@ -27,12 +27,8 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
 # Routes réservées aux tests Playwright (uniquement local et test)
 if getattr(settings, "ENVIRONNEMENT", "local") in ("local", "test"):
     api_v1_patterns += [
-        re_path(r"^dev/horloge/?$", VueDevHorloge.as_view(), name="dev_horloge"),
-        re_path(
-            r"^dev/taches/(?P<nom>[a-zA-Z0-9_-]+)/?$",
-            VueDevDeclencherTache.as_view(),
-            name="dev_tache",
-        ),
+        path("dev/horloge", VueDevHorloge.as_view(), name="dev_horloge"),
+        path("dev/taches/<str:nom>", VueDevDeclencherTache.as_view(), name="dev_tache"),
     ]
 
 urlpatterns = [

@@ -6,7 +6,7 @@
         "description": "API REST AgriSens (Django 5.2 LTS + DRF + MySQL spatial). Mise en relation d'agriculteurs, acheteurs, ingénieurs et livreurs au Cameroun."
     },
     "paths": {
-        "/api/v1/dev/horloge/": {
+        "/api/v1/dev/horloge": {
             "post": {
                 "operationId": "dev_horloge_create",
                 "description": "Décale l'heure ou la fige pour tester les expirations et délais.",
@@ -62,7 +62,7 @@
                 }
             }
         },
-        "/api/v1/dev/taches/{nom}/": {
+        "/api/v1/dev/taches/{nom}": {
             "post": {
                 "operationId": "dev_taches_create",
                 "description": "Déclenchement immédiat d'une tâche de fond pour les tests E2E.",
@@ -72,8 +72,7 @@
                         "in": "path",
                         "name": "nom",
                         "schema": {
-                            "type": "string",
-                            "pattern": "^[a-zA-Z0-9_-]+$"
+                            "type": "string"
                         },
                         "required": true
                     }
@@ -167,7 +166,7 @@
                 }
             }
         },
-        "/api/v1/sante/": {
+        "/api/v1/sante": {
             "get": {
                 "operationId": "sante_retrieve",
                 "description": "Indique que le processus HTTP répond.",
@@ -182,12 +181,19 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "API en marche"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SanteLivenessResponse"
+                                }
+                            }
+                        },
+                        "description": ""
                     }
                 }
             }
         },
-        "/api/v1/sante/pret/": {
+        "/api/v1/sante/pret": {
             "get": {
                 "operationId": "sante_pret_retrieve",
                 "description": "Vérifie la connexion MySQL et l'absence de migrations en attente.",
@@ -202,10 +208,24 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "API prête à servir"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SanteReadinessResponse"
+                                }
+                            }
+                        },
+                        "description": ""
                     },
                     "503": {
-                        "description": "Base inaccessible ou migrations en attente"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SanteReadinessErrorResponse"
+                                }
+                            }
+                        },
+                        "description": ""
                     }
                 }
             }
@@ -256,6 +276,60 @@
                     "resultat",
                     "statut",
                     "tache"
+                ]
+            },
+            "SanteLivenessResponse": {
+                "type": "object",
+                "properties": {
+                    "statut": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "statut",
+                    "version"
+                ]
+            },
+            "SanteReadinessErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "statut": {
+                        "type": "string"
+                    },
+                    "base": {
+                        "type": "string"
+                    },
+                    "migrations_en_attente": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "base",
+                    "migrations_en_attente",
+                    "statut"
+                ]
+            },
+            "SanteReadinessResponse": {
+                "type": "object",
+                "properties": {
+                    "statut": {
+                        "type": "string"
+                    },
+                    "base": {
+                        "type": "string"
+                    },
+                    "migrations_en_attente": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "base",
+                    "migrations_en_attente",
+                    "statut"
                 ]
             }
         },
