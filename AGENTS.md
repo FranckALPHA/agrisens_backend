@@ -1,7 +1,8 @@
 # AGENTS.md — agrisens-backend
 
 Dépôt de l'API AgriSens (FastAPI, SQLAlchemy 2, MySQL 8.4 spatial,
-Alembic, JWT, NotchPay, Groq).
+Alembic, JWT, NotchPay, Groq). **Pas de Docker** : MySQL installé
+nativement, API et worker lancés avec `uv run` (journal Q-31).
 
 ## À lire avant tout
 
@@ -27,7 +28,8 @@ Alembic, JWT, NotchPay, Groq).
 
 À compléter par F-00 avec les commandes réelles :
 
-    # démarrer (docker compose)
+    # créer les bases (scripts/init_bases.sql)
+    # démarrer l'API et le worker (uv run …)
     # appliquer les migrations
     # créer une migration
     # charger les données de démonstration
