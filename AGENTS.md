@@ -46,13 +46,46 @@ nativement, API et worker lancés avec `uv run python manage.py …`
 
 ## Commandes
 
-À compléter par F-00 avec les commandes réelles :
+```powershell
+# Initialiser les bases MySQL (poste neuf ou réinitialisation)
+Get-Content scripts/init_bases.sql | mysql -u root -p
 
-    # créer les bases (scripts/init_bases.sql)
-    # démarrer l'API (manage.py runserver) et le worker (manage.py worker)
-    # appliquer les migrations
-    # créer une migration
-    # charger les données de démonstration
-    # tests unitaires / intégration
-    # lint, format, types
-    # exporter openapi.json
+# Appliquer les migrations Django (développement)
+uv run python manage.py migrate
+
+# Créer une nouvelle migration après modification de modèles
+uv run python manage.py makemigrations <nom_app>
+
+# Vérifier qu'aucune migration n'est oubliée
+uv run python manage.py makemigrations --check --dry-run
+
+# Peupler les données de démonstration (idempotent, 6 utilisateurs Paul/Amina/Nadia/Jean/Mireille)
+uv run python manage.py seed_demo
+
+# Créer un super-administrateur
+uv run python manage.py creer_super_admin
+
+# Démarrer le serveur de développement API
+uv run python manage.py runserver 127.0.0.1:8000
+
+# Démarrer le worker de tâches asynchrones (APScheduler)
+uv run python manage.py worker
+
+# Réinitialiser la base E2E exclusivement (pour Playwright)
+uv run python manage.py reinitialiser_e2e
+
+# Tests unitaires et intégration
+uv run python -m pytest
+uv run python -m pytest -m unit
+uv run python -m pytest -m integration
+uv run python -m pytest --cov=apps --cov=commun --cov=config
+
+# Linting, formatage et typage statique
+uv run ruff check .
+uv run ruff format --check .
+uv run ruff format .
+uv run python -m mypy .
+
+# Régénérer le schéma OpenAPI (requis à chaque modification de route ou serializer)
+uv run python manage.py spectacular --file openapi.json --format openapi-json --fail-on-warn
+```

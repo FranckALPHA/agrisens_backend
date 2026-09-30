@@ -1,0 +1,75 @@
+name: CI Backend AgriSens
+
+on:
+  push:
+    branches: ["main", "feature/**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  qualite-et-tests:
+    name: Qualité de code, typage et tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: agrisens_test
+          MYSQL_USER: agrisens
+          MYSQL_PASSWORD: password_test_123
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    env:
+      ENVIRONNEMENT: test
+      BASE_DE_DONNEES_URL: mysql://agrisens:password_test_123@127.0.0.1:3306/agrisens_test
+      DJANGO_SECRET_KEY: ci-secret-key-agrisens-must-be-long-and-random-32chars
+      JWT_SECRET: ci-jwt-secret-agrisens-32chars-minimum-length
+      CODE_REMISE_CLE: ci-code-remise-cle-agrisens-32-chars
+      URL_SIGNEE_SECRET: ci-url-signee-secret-agrisens-32chars
+      NOTCHPAY_CLE_PUBLIQUE: ci_notchpay_pub
+      NOTCHPAY_CLE_PRIVEE: ci_notchpay_priv
+      NOTCHPAY_SECRET_WEBHOOK: ci_notchpay_webhook
+      GROQ_CLE_API: ci_groq_cle
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Configuration de uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Configuration de Python 3.12
+        run: uv python install 3.12
+
+      - name: Installation des dépendances
+        run: uv sync --all-groups
+
+      - name: Vérification du formatage (ruff format)
+        run: uv run ruff format --check .
+
+      - name: Vérification du linting (ruff check)
+        run: uv run ruff check .
+
+      - name: Vérification du typage statique (mypy)
+        run: uv run python -m mypy .
+
+      - name: Application des migrations Django
+        run: uv run python manage.py migrate --settings=config.settings.test
+
+      - name: Vérification des migrations manquantes
+        run: uv run python manage.py makemigrations --check --dry-run --settings=config.settings.test
+
+      - name: Exécution des tests et couverture (pytest)
+        run: uv run python -m pytest -v --cov=apps --cov=commun --cov=config
+
+      - name: Vérification de la conformité du contrat OpenAPI
+        run: |
+          uv run python manage.py spectacular --file openapi.json --format openapi-json --fail-on-warn
+          git diff --exit-code openapi.json
