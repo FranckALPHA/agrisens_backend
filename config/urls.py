@@ -5,7 +5,7 @@ Conventions techniques §4, prompt F-00 points 16 et 17.
 
 from django.conf import settings
 from django.contrib import admin
-from django.urls import URLPattern, URLResolver, include, path, re_path
+from django.urls import URLPattern, URLResolver, include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from config.routes_dev import VueDevDeclencherTache, VueDevHorloge

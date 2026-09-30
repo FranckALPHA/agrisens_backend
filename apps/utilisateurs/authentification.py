@@ -1,20 +1,26 @@
 """Authentification JWT pour Django REST Framework.
 
-Conventions techniques §4 et §5 :
+Conventions techniques §4 et §5, prompt F-02 points 1 et 3 :
 - Lecture du jeton d'accès dans l'en-tête Authorization: Bearer <jeton>
-- Validation de signature et d'expiration via PyJWT
-- Utilisateur injecté dans request.user
+- Validation de signature et d'expiration via PyJWT (HS256, type « acces »)
+- Utilisateur injecté dans request.user ; le statut du compte (suspendu,
+  en attente) est vérifié par les permissions DRF, pas ici : un compte
+  suspendu doit recevoir 403 compte_suspendu, pas 401.
 """
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import jwt
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from rest_framework import exceptions
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.request import Request
 
-from apps.utilisateurs.models import Utilisateur
+if TYPE_CHECKING:
+    from apps.utilisateurs.models import Utilisateur
 
 
 class AuthentificationJWT(BaseAuthentication):
@@ -24,6 +30,10 @@ class AuthentificationJWT(BaseAuthentication):
         en_tete_auth = request.headers.get("Authorization")
         if not en_tete_auth:
             return None
+
+        # Import différé : ce module est chargé par les réglages DRF pendant
+        # l'populate des apps Django, avant que models.py soit entièrement chargé.
+        Utilisateur = get_user_model()
 
         morceaux = en_tete_auth.split()
         if len(morceaux) != 2 or morceaux[0].lower() != "bearer":
@@ -41,6 +51,9 @@ class AuthentificationJWT(BaseAuthentication):
         except jwt.InvalidTokenError:
             raise exceptions.AuthenticationFailed("Jeton d'accès invalide.") from None
 
+        if payload.get("type") not in (None, "acces"):
+            raise exceptions.AuthenticationFailed("Jeton d'accès invalide.")
+
         utilisateur_id = payload.get("sub") or payload.get("utilisateur_id")
         if not utilisateur_id:
             raise exceptions.AuthenticationFailed(
@@ -52,9 +65,8 @@ class AuthentificationJWT(BaseAuthentication):
         except Utilisateur.DoesNotExist:
             raise exceptions.AuthenticationFailed("Utilisateur introuvable.") from None
 
-        if not utilisateur.is_active:
-            raise exceptions.AuthenticationFailed("Compte utilisateur inactif ou suspendu.")
-
+        # Le statut (suspendu, en attente, anonymisé) n'est pas rejeté ici :
+        # les permissions DRF renvoient 403 avec un code stable.
         return utilisateur, payload
 
     def authenticate_header(self, request: Request) -> str:

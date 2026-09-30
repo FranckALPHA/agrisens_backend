@@ -1,54 +1,107 @@
-"""Classes de permissions DRF réutilisables.
+"""Classes de permissions DRF réutilisables (prompt F-02 point 4).
 
-Conventions techniques §5 et prompt F-00 point 10.
+- ``EstAuthentifieEtActif`` : compte actif ; suspendu → 403 ``compte_suspendu``.
+- ``ARole(*roles)`` : réservé aux rôles donnés (utilisé comme fabrique de classe).
+- ``AutoriseEnAttente`` : ingénieur en attente de validation autorisé, accès
+  limité à ce que la vue permet (profil et justificatifs).
+
+Conventions techniques §5 : propriété d'une ressource vérifiée dans le service,
+ressource d'autrui → 404 (jamais 403 qui révélerait l'existence).
 """
 
+from rest_framework import status
 from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
+from commun.exceptions import ErreurMetier
+
+
+def _erreur_statut(user: object) -> ErreurMetier:
+    """Construit l'erreur 403 correspondant au statut non actif du compte."""
+    statut = getattr(user, "statut_compte", None)
+    if statut == "suspendu":
+        return ErreurMetier(
+            code="compte_suspendu",
+            message="Votre compte est suspendu. Contactez l'administrateur d'AgriSens.",
+            statut_http=status.HTTP_403_FORBIDDEN,
+        )
+    if statut == "en_attente_validation":
+        return ErreurMetier(
+            code="compte_en_attente",
+            message="Votre compte est en attente de validation par un administrateur.",
+            statut_http=status.HTTP_403_FORBIDDEN,
+        )
+    return ErreurMetier(
+        code="compte_inactif",
+        message="Votre compte n'est pas actif.",
+        statut_http=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def _utilisateur_connecte(request: Request) -> object | None:
+    user = getattr(request, "user", None)
+    if user is None or not getattr(user, "is_authenticated", False):
+        return None
+    return user
+
 
 class EstAuthentifieEtActif(BasePermission):
-    """Vérifie que l'utilisateur est authentifié et que son compte est actif."""
+    """L'utilisateur doit être authentifié avec un compte actif.
 
-    message = "Compte non actif ou authentification requise."
-
-    def has_permission(self, request: Request, view: APIView) -> bool:
-        user = getattr(request, "user", None)
-        return bool(
-            user and user.is_authenticated and getattr(user, "statut_compte", None) == "actif"
-        )
-
-
-class ARole(BasePermission):
-    """Vérifie que l'utilisateur a l'un des rôles spécifiés."""
-
-    def __init__(self, *roles: str) -> None:
-        self.roles = set(roles)
-
-    def has_permission(self, request: Request, view: APIView) -> bool:
-        user = getattr(request, "user", None)
-        if not (user and user.is_authenticated and getattr(user, "statut_compte", None) == "actif"):
-            return False
-        return getattr(user, "role", None) in self.roles
-
-
-def a_role(*roles: str) -> type[BasePermission]:
-    """Fabrique de classe de permission DRF paramétrable par rôle.
-
-    Usage : permission_classes = [a_role("admin", "super_admin")]
+    Un compte suspendu ou en attente de validation renvoie 403 avec un code
+    stable (``compte_suspendu`` / ``compte_en_attente``) plutôt que 401.
     """
 
-    class _PermissionRole(BasePermission):
+    message = "Authentification requise."
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        user = _utilisateur_connecte(request)
+        if user is None:
+            return False
+        if getattr(user, "statut_compte", None) == "actif":
+            return True
+        raise _erreur_statut(user)
+
+
+class AutoriseEnAttente(BasePermission):
+    """Compte actif OU en attente de validation (ingénieur fraîchement inscrit).
+
+    Utilisé sur les routes du profil personnel : l'ingénieur en attente garde
+    l'accès à son profil et à ses justificatifs, rien d'autre.
+    Un compte suspendu renvoie 403 ``compte_suspendu``.
+    """
+
+    message = "Authentification requise."
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        user = _utilisateur_connecte(request)
+        if user is None:
+            return False
+        if getattr(user, "statut_compte", None) in ("actif", "en_attente_validation"):
+            return True
+        raise _erreur_statut(user)
+
+
+def ARole(*roles: str) -> type[BasePermission]:
+    """Fabrique une classe de permission réservée aux rôles donnés.
+
+    Usage : ``permission_classes = [ARole("agriculteur", "admin")]``
+    Vérifie d'abord que le compte est actif, puis que le rôle est autorisé.
+    """
+
+    class _PermissionRole(EstAuthentifieEtActif):
         message = "Accès réservé aux rôles : " + ", ".join(roles)
 
         def has_permission(self, request: Request, view: APIView) -> bool:
-            user = getattr(request, "user", None)
-            if not (
-                user and user.is_authenticated and getattr(user, "statut_compte", None) == "actif"
-            ):
+            if not super().has_permission(request, view):
                 return False
+            user = _utilisateur_connecte(request)
             return getattr(user, "role", None) in roles
 
     _PermissionRole.__name__ = f"ARole_{'_'.join(roles)}"
     return _PermissionRole
+
+
+# Alias conservé pour les appels internes déjà écrits.
+a_role = ARole

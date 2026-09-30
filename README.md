@@ -27,7 +27,7 @@ Get-Content scripts/init_bases.sql | mysql -u root -p
 # Appliquer les migrations
 uv run python manage.py migrate
 
-# Charger les 6 utilisateurs de démonstration
+# Charger les comptes de démonstration (voir §3)
 uv run python manage.py seed_demo
 
 # Démarrer le serveur de développement (http://127.0.0.1:8000)
@@ -37,13 +37,37 @@ uv run python manage.py runserver
 uv run python manage.py worker
 ```
 
-## 3. Documentation de l'API
+## 3. Comptes de démonstration (local uniquement)
+
+`seed_demo` est idempotent : il crée ou recale à chaque passage les comptes
+attendus par les tests E2E (`docs/12-plan-tests-playwright.md` §3 et
+`e2e/fixtures/roles.ts` côté frontend). **Ces mots de passe ne valent que
+pour les bases locales / test / e2e, jamais en production.**
+
+Mot de passe commun : `Motdepasse123!`
+
+| Téléphone | Nom | Rôle | Statut |
+| --- | --- | --- | --- |
+| `+237690000000` | Super Administrateur | `super_admin` | actif |
+| `+237690000001` | Paul Mbianda | `agriculteur` | actif |
+| `+237690000002` | Amina Oumarou | `acheteur` | actif |
+| `+237690000003` | Nadia Kamga | `ingenieur_agronome` | en attente de validation |
+| `+237690000004` | Jean Tchinda | `livreur` | actif |
+| `+237690000005` | Mireille Ngo | `admin` | actif |
+| `+237690000006` | Clarisse Eboa | `ingenieur_agronome` | actif |
+| `+237690000007` | Alain Njoya | `livreur` | actif |
+| `+237690000099` | Compte Suspendu | `acheteur` | suspendu |
+
+Un super-admin « réel » peut aussi être créé sans mot de passe en dur :
+`uv run python manage.py creer_super_admin` (téléphone et mot de passe demandés au terminal).
+
+## 4. Documentation de l'API
 
 - **Swagger UI** : `http://127.0.0.1:8000/api/docs/`
 - **Schéma OpenAPI v3** : `http://127.0.0.1:8000/api/schema/`
 - **Fichier versionné** : `openapi.json` à la racine du dépôt
 
-## 4. Tests et qualité du code
+## 5. Tests et qualité du code
 
 ```powershell
 # Exécuter tous les tests (unitaires + intégration)

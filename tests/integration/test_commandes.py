@@ -8,18 +8,25 @@ from django.core.management import CommandError, call_command
 @pytest.mark.integration
 @pytest.mark.django_db
 def test_commande_seed_demo_idempotente() -> None:
-    """La commande seed_demo crée les 6 comptes et est idempotente."""
+    """seed_demo crée les comptes des personnages (docs/12 §3) et est idempotente."""
     # Premier passage
     call_command("seed_demo")
-    assert Utilisateur.objects.filter(telephone="+237670000001").exists()
-    assert Utilisateur.objects.filter(telephone="+237670000002").exists()
-    assert Utilisateur.objects.filter(telephone="+237670000003").exists()
-    assert Utilisateur.objects.filter(telephone="+237670000004").exists()
-    assert Utilisateur.objects.filter(telephone="+237670000005").exists()
-    assert Utilisateur.objects.filter(telephone="+237670000099").exists()
+    assert Utilisateur.objects.filter(telephone="+237690000001").exists()
+    assert Utilisateur.objects.filter(telephone="+237690000002").exists()
+    assert Utilisateur.objects.filter(telephone="+237690000004").exists()
+    assert Utilisateur.objects.filter(telephone="+237690000005").exists()
+    assert Utilisateur.objects.filter(telephone="+237690000000").exists()
+    assert Utilisateur.objects.filter(telephone="+237690000099").exists()
 
-    # Deuxième passage sans erreur
+    nadia = Utilisateur.objects.get(telephone="+237690000003")
+    assert nadia.role == RoleUtilisateur.INGENIEUR_AGRONOME
+    assert nadia.statut_compte == StatutCompte.EN_ATTENTE_VALIDATION
+    suspendu = Utilisateur.objects.get(telephone="+237690000099")
+    assert suspendu.statut_compte == StatutCompte.SUSPENDU
+
+    # Deuxième passage sans erreur, toujours 9 comptes
     call_command("seed_demo")
+    assert Utilisateur.objects.count() == 9
 
 
 @pytest.mark.integration

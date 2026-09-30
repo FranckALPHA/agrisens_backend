@@ -8,10 +8,11 @@ Conventions techniques §3, journal Q-32 et prompt F-00 point 12 :
 - Aide pour index spatial : creer_index_spatial(table, colonne).
 """
 
-from typing import Any
+from typing import Any, ClassVar
 
 from django.db import migrations, models
 from django.db.backends.base.base import BaseDatabaseWrapper
+from rest_framework import serializers as drf_serializers
 from shapely import wkb, wkt
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -116,3 +117,69 @@ def creer_index_spatial(nom_table: str, nom_colonne: str) -> migrations.RunSQL:
     sql = f"CREATE SPATIAL INDEX {nom_index} ON {nom_table} ({nom_colonne});"
     reverse_sql = f"DROP INDEX {nom_index} ON {nom_table};"
     return migrations.RunSQL(sql, reverse_sql=reverse_sql)
+
+
+class ChampGeoJSONSerializer(drf_serializers.Field):
+    """Champ DRF : GeoJSON (lon, lat) ↔ géométrie Shapely lue de MySQL.
+
+    Accepte Point, LineString et Polygon ; la validation métier
+    (emprise Cameroun, géométrie valide) reste dans le service.
+    """
+
+    types_autorises = ("Point", "LineString", "Polygon")
+    default_error_messages: ClassVar[dict[str, Any]] = {
+        "invalid": "Position attendue au format GeoJSON (objet JSON).",
+        "type_invalide": "Type de géométrie non autorisé : attendu {types}.",
+        "invalide": "Géométrie invalide : {message}.",
+        "non_serialisable": "Valeur géographique non serialisable ({valeur}).",
+    }
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.types_autorises = tuple(kwargs.pop("types", self.types_autorises))
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data: Any) -> dict[str, Any]:
+        if not isinstance(data, dict):
+            self.fail("invalid")
+        if data.get("type") not in self.types_autorises:
+            self.fail("type_invalide", types=", ".join(self.types_autorises))
+        try:
+            valider_geojson(data)
+        except Exception as exc:
+            self.fail("invalide", message=str(exc))
+        return data
+
+    def to_representation(self, value: Any) -> Any:
+        if isinstance(value, BaseGeometry):
+            # Objet Shapely côté Python = ordre standard (lon, lat) = GeoJSON direct.
+            return value.__geo_interface__
+        if value is None or isinstance(value, dict):
+            return value
+        self.fail("non_serialisable", valeur=type(value).__name__)
+        return None
+
+
+try:
+    from drf_spectacular.extensions import OpenApiSerializerFieldExtension
+
+    class ChampGeoJSONScheme(OpenApiSerializerFieldExtension):
+        """Schéma OpenAPI du champ GeoJSON : objet « type » + « coordinates ».
+
+        Les géométries complexes (Polygon, LineString) ont des coordonnées
+        imbriquées : le contrat reste un objet GeoJSON générique.
+        """
+
+        target_class = "commun.champs_geo.ChampGeoJSONSerializer"
+
+        def map_serializer_field(self, auto_schema: Any, direction: Any) -> dict[str, Any]:
+            return {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string"},
+                    "coordinates": {"type": "array", "items": {"type": "number"}},
+                },
+                "required": ["type", "coordinates"],
+                "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+            }
+except ImportError:  # pragma: no cover - drf-spectacular est une dépendance fixe
+    pass

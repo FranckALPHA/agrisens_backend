@@ -8,14 +8,13 @@ Conventions techniques §5, prompt F-00 point 20 :
 
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
-import jwt
 import pytest
-from django.conf import settings
+from apps.utilisateurs.services import SessionService
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
+from tests.aides_permissions import verifier_garde_route as _verifier_garde_route
 
 Utilisateur = get_user_model()
 
@@ -28,17 +27,11 @@ def client_api() -> APIClient:
 
 @pytest.fixture
 def generer_jeton_acces() -> Callable[[Any], str]:
-    """Génère un jeton JWT d'accès valide pour un utilisateur donné."""
+    """Génère un jeton JWT d'accès valide via le vrai service (F-02)."""
 
     def _generateur(utilisateur: Any) -> str:
-        payload = {
-            "sub": str(utilisateur.id),
-            "telephone": utilisateur.telephone,
-            "role": utilisateur.role,
-            "exp": datetime.now(UTC) + timedelta(minutes=15),
-            "iat": datetime.now(UTC),
-        }
-        return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
+        jeton, _ = SessionService.generer_jeton_acces(utilisateur)
+        return jeton
 
     return _generateur
 
@@ -99,3 +92,16 @@ def client_authentifie(
         return client, user
 
     return _client
+
+
+@pytest.fixture
+def verifier_garde_route(client_authentifie: Callable[..., tuple[APIClient, Any]]):
+    """Aide prompt F-02 point 7 : 401 sans jeton, 403 rôles interdits, succès autorisés.
+
+    Usage : ``verifier_garde_route(url, roles_autorises=[...], methode="get")``.
+    """
+
+    def _verificateur(url: str, roles_autorises: Any, **kwargs: Any) -> None:
+        _verifier_garde_route(client_authentifie, url, roles_autorises, **kwargs)
+
+    return _verificateur
