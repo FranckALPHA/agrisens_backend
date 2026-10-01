@@ -32,8 +32,9 @@ def test_modele_utilisateur_personnalise_declare() -> None:
 
 @pytest.mark.unit
 def test_registre_parametres_plateforme_complet() -> None:
-    """Le registre contient les 24 paramètres obligatoires de Journal §4."""
-    assert len(REGISTRE) == 24
+    """Le registre contient les 24 paramètres du Journal §4 plus les
+    hypothèses F-03 Q-34 (rayon de zone ingénieur) et Q-35 (durée URL signée)."""
+    assert len(REGISTRE) == 26
 
     # Paramètres de livraison de base
     p_base = cle_connue("livraison.base_fcfa")
@@ -56,7 +57,8 @@ def test_registre_parametres_plateforme_complet() -> None:
     assert "livraison.base_fcfa" in publiques
     assert "commission.taux_pb" not in publiques
 
-    # Démarrages
+    # Démarrages : 24 clés de base + consultation.zone_rayon_km_max (Q-34)
+    # et fichiers.duree_url_signee_s (Q-35) ajoutées en F-03.
     demarrages = valeurs_de_demarrage()
-    assert len(demarrages) == 24
+    assert len(demarrages) == 26
     assert demarrages["ia.delai_max_s"] == 60

@@ -98,11 +98,18 @@ class SessionService:
         return session, jeton_brut
 
     @staticmethod
-    def _revoquer_toutes(utilisateur: Utilisateur) -> None:
-        """Révoke toutes les sessions valides d'un utilisateur (détection de réutilisation)."""
+    def revoquer_toutes_sessions(utilisateur: Utilisateur) -> None:
+        """Révoque toutes les sessions valides d'un utilisateur.
+
+        Usages : détection de réutilisation (rotation Q-25), suspension et
+        réinitialisation de mot de passe par un admin (prompt F-03 point 4).
+        """
         Session.objects.filter(utilisateur=utilisateur, revoque_le__isnull=True).update(
             revoque_le=maintenant()
         )
+
+    # Alias privé historique conservé en interne.
+    _revoquer_toutes = revoquer_toutes_sessions
 
     @classmethod
     def rafraichir(cls, jeton_brut: str) -> tuple[Utilisateur, Session, str]:

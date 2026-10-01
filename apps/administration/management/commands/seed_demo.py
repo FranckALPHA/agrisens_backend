@@ -7,12 +7,31 @@ e2e/fixtures/roles.ts côté frontend (mêmes téléphones, même mot de passe).
 
 Le mot de passe de démonstration n'est valide que pour les bases
 locales / test / e2e — jamais en production (prompt F-02 point 8).
+
+F-03 point 5 : profils de Nadia (en attente, avec justificatifs),
+de Clarisse (ingénieure validée) et de Jean (livreur).
 """
 
+import io
 from typing import Any
 
+from commun.horloge import maintenant
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management.base import BaseCommand
+from PIL import Image
 
+from apps.exploitations.models import Exploitation
+from apps.exploitations.services import creer
+from apps.fichiers.models import ContexteFichier
+from apps.fichiers.services import service_fichiers
+from apps.profils.models import (
+    IngenieurProfil,
+    LivreurProfil,
+    PieceJustificative,
+    StatutJustificatif,
+    StatutValidation,
+    TypeJustificatif,
+)
 from apps.utilisateurs.models import RoleUtilisateur, StatutCompte, Utilisateur
 
 # Comptes des personnages (docs/12 §3 + prompt F-02 point 8).
@@ -95,12 +114,41 @@ UTILISATEURS_DEMO: list[dict[str, str]] = [
 
 MOT_DE_PASSE_DEMO = "Motdepasse123!"
 
+# Positions GeoJSON (lon, lat) dans l'emprise du Cameroun (commun/geo.py).
+POINT_DOUALA: dict[str, Any] = {"type": "Point", "coordinates": [9.7679, 4.0483]}
+POINT_YAOUNDE: dict[str, Any] = {"type": "Point", "coordinates": [11.5137, 3.848]}
+
+
+def _octets_pdf() -> bytes:
+    """Mini PDF valide (le type est vérifié sur le contenu par `filetype`)."""
+    return b"%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n"
+
+
+def _octets_jpeg() -> bytes:
+    """Petit JPEG réel généré par Pillow (avec EXIF retiré à l'upload)."""
+    sortie = io.BytesIO()
+    Image.new("RGB", (40, 40), (18, 100, 60)).save(sortie, format="JPEG")
+    return sortie.getvalue()
+
 
 class Command(BaseCommand):
     help = "Injecte les données de démonstration (local / test / e2e uniquement)."
 
     def handle(self, *args: Any, **options: Any) -> None:
         self.stdout.write("Initialisation des données de démonstration (idempotent)...")
+
+        # Vieux doublons de démo (schémas antérieurs à F-02 : mêmes emails,
+        # téléphones différents) : ils bloqueraient la création des comptes
+        # officiels docs/12 §3 sur l'unicité de l'email.
+        emails_demo = {info["email"] for info in UTILISATEURS_DEMO}
+        telephones_demo = {info["telephone"] for info in UTILISATEURS_DEMO}
+        obsoletes = Utilisateur.objects.filter(email__in=emails_demo).exclude(
+            telephone__in=telephones_demo
+        )
+        nb_obsoletes = obsoletes.count()
+        if nb_obsoletes:
+            obsoletes.delete()
+            self.stdout.write(f"{nb_obsoletes} doublon(s) de démo obsolète(s) supprimé(s).")
 
         crees = 0
         existants = 0
@@ -137,3 +185,132 @@ class Command(BaseCommand):
                 f"({crees} utilisateurs créés, {existants} recalés)."
             )
         )
+        self._profils_demo()
+        self._exploitation_demo()
+
+    # --- Profils F-03 --------------------------------------------------------
+
+    def _profils_demo(self) -> None:
+        """Nadia (en attente + justificatifs), Clarisse (validée), Jean (livreur)."""
+        par_telephone = {
+            u.telephone: u
+            for u in Utilisateur.objects.filter(
+                telephone__in=[
+                    "+237690000003",  # Nadia
+                    "+237690000006",  # Clarisse
+                    "+237690000004",  # Jean
+                ]
+            )
+        }
+
+        nadia = par_telephone["+237690000003"]
+        profil_nadia, _ = IngenieurProfil.objects.update_or_create(
+            utilisateur=nadia,
+            defaults={
+                "specialites": ["maraichage", "vivriers"],
+                "region": "littoral",
+                "zone_centre": POINT_DOUALA,
+                "zone_rayon_km": 50,
+                "tarif_consultation_fcfa": 10_000,
+                "disponible": False,
+                "biographie": "Ingénieure agronome à Douala, maraîchage et vivriers.",
+                "modalites": "Sur site ou en visioconférence, en semaine.",
+                "statut_validation": StatutValidation.EN_ATTENTE,
+                "motif_refus": None,
+                "valide_par": None,
+                "valide_le": None,
+            },
+        )
+        self._justificatifs(
+            profil_nadia,
+            [
+                (TypeJustificatif.DIPLOME, "diplome-agronomie.pdf", _octets_pdf()),
+                (TypeJustificatif.PIECE_IDENTITE, "cin.jpg", _octets_jpeg()),
+            ],
+            statut=StatutJustificatif.SOUMISE,
+        )
+
+        clarisse = par_telephone["+237690000006"]
+        mireille = Utilisateur.objects.get(telephone="+237690000005")
+        profil_clarisse, _ = IngenieurProfil.objects.update_or_create(
+            utilisateur=clarisse,
+            defaults={
+                "specialites": ["cacao_cafe", "arboriculture"],
+                "region": "littoral",
+                "zone_centre": POINT_YAOUNDE,
+                "zone_rayon_km": 80,
+                "tarif_consultation_fcfa": 15_000,
+                # Hypothèse de démo : profil complet + validé ⇒ disponible (D-13).
+                "disponible": True,
+                "biographie": "Ingénieure sénior, filières cacao-café.",
+                "modalites": "Déplacements dans la région Centrale.",
+                "statut_validation": StatutValidation.VALIDE,
+                "motif_refus": None,
+                "valide_par": mireille,
+            },
+        )
+        if profil_clarisse.valide_le is None:
+            profil_clarisse.valide_le = maintenant()
+            profil_clarisse.save(update_fields=["valide_le", "maj_le"])
+        self._justificatifs(
+            profil_clarisse,
+            [(TypeJustificatif.DIPLOME, "master-agronomie.pdf", _octets_pdf())],
+            statut=StatutJustificatif.ACCEPTEE,
+        )
+
+        jean = par_telephone["+237690000004"]
+        LivreurProfil.objects.update_or_create(
+            utilisateur=jean,
+            defaults={
+                "disponible": False,
+                "position": POINT_YAOUNDE,
+                "zone": "centre",
+            },
+        )
+        self.stdout.write("Profils de démonstration prêts (Nadia, Clarisse, Jean).")
+
+    def _exploitation_demo(self) -> None:
+        """Champ Nord de Paul, parcelle stable près de Yaoundé (F-04)."""
+        paul = Utilisateur.objects.get(telephone="+237690000001")
+        anneau = [
+            [11.5130, 3.8475],
+            [11.5140, 3.8475],
+            [11.5140, 3.8485],
+            [11.5130, 3.8485],
+            [11.5130, 3.8475],
+        ]
+        parcelle = {"type": "Polygon", "coordinates": [anneau]}
+        existe = Exploitation.objects.filter(agriculteur=paul, nom="Champ Nord").exists()
+        if not existe:
+            creer(
+                paul,
+                nom="Champ Nord",
+                parcelle=parcelle,
+                type_sol="argileux",
+                region="centre",
+                localite="Yaoundé",
+            )
+        self.stdout.write("Exploitation de démonstration prête (Champ Nord).")
+
+    @staticmethod
+    def _justificatifs(
+        profil: IngenieurProfil,
+        pieces: list[tuple[str, str, bytes]],
+        *,
+        statut: str,
+    ) -> None:
+        """Dépose les justificatifs manquants via le vrai service fichiers."""
+        for type_document, nom, octets in pieces:
+            if profil.justificatifs.filter(type=type_document).exists():
+                continue
+            fichier = service_fichiers.televerser(
+                proprietaire=profil.utilisateur,
+                contexte=ContexteFichier.JUSTIFICATIF,
+                fichier=SimpleUploadedFile(nom, octets, content_type="application/octet-stream"),
+            )
+            PieceJustificative.objects.create(
+                ingenieur=profil,
+                type=type_document,
+                fichier=fichier,
+                statut=statut,
+            )

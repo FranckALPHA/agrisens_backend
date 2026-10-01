@@ -6,6 +6,447 @@
         "description": "API REST AgriSens (Django 5.2 LTS + DRF + MySQL spatial). Mise en relation d'agriculteurs, acheteurs, ingénieurs et livreurs au Cameroun."
     },
     "paths": {
+        "/api/v1/admin/ingenieurs/{id}/refuser/": {
+            "post": {
+                "operationId": "admin_ingenieurs_refuser_create",
+                "description": "Le motif est obligatoire (vide → 422 `motif_obligatoire`) et notifié (D-13).",
+                "summary": "Refuser le profil d'un ingénieur",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefusIngenieurRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefusIngenieurRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IngenieurPublic"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    },
+                    "409": {
+                        "description": "transition_invalide"
+                    },
+                    "422": {
+                        "description": "motif_obligatoire"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/ingenieurs/{id}/valider/": {
+            "post": {
+                "operationId": "admin_ingenieurs_valider_create",
+                "description": "Après examen des justificatifs (D-13). Rend le compte actif et notifie l'ingénieur. Journalisé dans JOURNAL_AUDIT.",
+                "summary": "Valider le profil d'un ingénieur",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IngenieurPublic"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    },
+                    "409": {
+                        "description": "transition_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/utilisateurs/": {
+            "get": {
+                "operationId": "admin_utilisateurs_lister",
+                "description": "GET /admin/utilisateurs — liste ; POST — création d'admin (sadm seul, 403 sinon).",
+                "summary": "Lister les utilisateurs (admin)",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "recherche",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Nom ou téléphone"
+                    },
+                    {
+                        "in": "query",
+                        "name": "role",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre par rôle"
+                    },
+                    {
+                        "in": "query",
+                        "name": "statut",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre par statut de compte"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeUtilisateursAdmin"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "admin_utilisateurs_create",
+                "description": "Réservé au super-admin (admin et super_admin ne s'inscrivent pas, 02 §2.1). Le mot de passe temporaire n'est renvoyé qu'une fois.",
+                "summary": "Créer un compte d'administration",
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreationAdminRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreationAdminRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MotDePasseTemporaire"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "403": {
+                        "description": "permission_refusee"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/utilisateurs/{id}/": {
+            "get": {
+                "operationId": "admin_utilisateurs_retrieve",
+                "description": "GET /admin/utilisateurs/{id} — détail + dossier ingénieur (D-13).",
+                "summary": "Consulter un utilisateur (admin)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UtilisateurAdminDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/utilisateurs/{id}/reactiver/": {
+            "post": {
+                "operationId": "admin_utilisateurs_reactiver_create",
+                "description": "POST /admin/utilisateurs/{id}/reactiver.",
+                "summary": "Réactiver un compte suspendu",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UtilisateurAdminDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    },
+                    "409": {
+                        "description": "transition_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/utilisateurs/{id}/reinitialiser-mot-de-passe/": {
+            "post": {
+                "operationId": "admin_utilisateurs_reinitialiser_mot_de_passe_create",
+                "description": "Le mot de passe n'est renvoyé qu'une seule fois, jamais stocké ni journalisé en clair ; le compte devra le changer à la connexion. Toutes les sessions en cours sont révoquées.",
+                "summary": "Émettre un mot de passe temporaire",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MotDePasseTemporaire"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/utilisateurs/{id}/suspendre/": {
+            "post": {
+                "operationId": "admin_utilisateurs_suspendre_create",
+                "description": "Le compte devient inaccessible et TOUTES ses sessions sont révoquées immédiatement. Motif obligatoire, notifié et journalisé.",
+                "summary": "Suspendre un compte",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SuspendreRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SuspendreRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UtilisateurAdminDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    },
+                    "409": {
+                        "description": "transition_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/utilisateurs/compteurs/": {
+            "get": {
+                "operationId": "admin_utilisateurs_compteurs_retrieve",
+                "description": "Ingénieurs en attente de validation, demandes de réinitialisation en attente (Q-23) et comptes suspendus.",
+                "summary": "Compteurs d'administration",
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompteursAdmin"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/utilisateurs/demandes-reinitialisation/": {
+            "get": {
+                "operationId": "admin_utilisateurs_demandes_reinitialisation_retrieve",
+                "description": "GET /admin/utilisateurs/demandes-reinitialisation — file Q-23.",
+                "summary": "Lister les demandes de réinitialisation en attente",
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeDemandesReinitialisation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/auth/connexion/": {
             "post": {
                 "operationId": "auth_connexion_create",
@@ -17,6 +458,11 @@
                 "requestBody": {
                     "content": {
                         "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConnexionRequest"
+                            }
+                        },
+                        "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/ConnexionRequest"
                             }
@@ -86,6 +532,11 @@
                             "schema": {
                                 "$ref": "#/components/schemas/DemandeReinitialisationRequest"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DemandeReinitialisationRequest"
+                            }
                         }
                     },
                     "required": true
@@ -120,6 +571,11 @@
                 "requestBody": {
                     "content": {
                         "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InscriptionRequest"
+                            }
+                        },
+                        "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/InscriptionRequest"
                             }
@@ -280,6 +736,761 @@
                     },
                     "404": {
                         "description": "Tâche inconnue"
+                    }
+                }
+            }
+        },
+        "/api/v1/exploitations/": {
+            "get": {
+                "operationId": "exploitations_list",
+                "summary": "Lister les exploitations de l'agriculteur",
+                "tags": [
+                    "exploitations"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Exploitation"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "exploitations_create",
+                "summary": "Créer une exploitation",
+                "tags": [
+                    "exploitations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExploitationCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExploitationCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exploitation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/exploitations/{identifiant}/": {
+            "get": {
+                "operationId": "exploitations_retrieve",
+                "summary": "Consulter une exploitation",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "exploitations"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exploitation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Ressource introuvable"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "exploitations_partial_update",
+                "summary": "Modifier une exploitation",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "exploitations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedExploitationModificationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedExploitationModificationRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exploitation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/exploitations/{identifiant}/archiver/": {
+            "post": {
+                "operationId": "exploitations_archiver_create",
+                "summary": "Archiver une exploitation",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "exploitations"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exploitation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/fichiers/": {
+            "post": {
+                "operationId": "fichiers_create",
+                "description": "Upload multipart (champ binaire `fichier` + `contexte`). Le type est vérifié sur le contenu, les tailles maximales viennent des paramètres de la plateforme ; les métadonnées EXIF des images sont retirées. Retourne l'identifiant du fichier.",
+                "summary": "Téléverser un fichier",
+                "tags": [
+                    "fichiers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TeleversementRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Fichier"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/fichiers/{id}/": {
+            "get": {
+                "operationId": "fichiers_retrieve",
+                "description": "Renvoie une redirection 302 vers une URL signée HMAC de courte durée. Règles d'accès par contexte : photos de produits publiques, justificatifs visibles par le propriétaire et les admins ; un fichier non visible pour l'appelant renvoie 404.",
+                "summary": "Obtenir un fichier",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "fichiers"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirection vers l'URL signée"
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/fichiers/{id}/contenu/": {
+            "get": {
+                "operationId": "fichiers_contenu_retrieve",
+                "description": "Point d'arrivée de la redirection de `GET /fichiers/{id}`. Autorisé uniquement par la signature HMAC ; signature invalide → 404, lien expiré → 410.",
+                "summary": "Télécharger le contenu d'un fichier",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "expire",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Timestamp d'expiration (secondes)"
+                    },
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "signature",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Signature HMAC-SHA256"
+                    }
+                ],
+                "tags": [
+                    "fichiers"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": "Contenu binaire du fichier"
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    },
+                    "410": {
+                        "description": "url_expiree"
+                    }
+                }
+            }
+        },
+        "/api/v1/ingenieurs/": {
+            "get": {
+                "operationId": "ingenieurs_lister",
+                "description": "Filtres `specialite` (code du référentiel) et `region`. Le filtre par exploitation (zone) sera ajouté en F-11.",
+                "summary": "Lister les ingénieurs validés et disponibles",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "region",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Code de région"
+                    },
+                    {
+                        "in": "query",
+                        "name": "specialite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Code de spécialité"
+                    }
+                ],
+                "tags": [
+                    "ingenieurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeIngenieurs"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/ingenieurs/{id}/": {
+            "get": {
+                "operationId": "ingenieurs_retrieve",
+                "description": "GET /ingenieurs/{id} — profil public, sans téléphone (03 SPEC-01).",
+                "summary": "Consulter le profil public d'un ingénieur",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "ingenieurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IngenieurPublic"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/ingenieurs/moi/justificatifs/": {
+            "get": {
+                "operationId": "ingenieurs_moi_justificatifs_list",
+                "description": "GET/POST /ingenieurs/moi/justificatifs — dossier de candidature (D-13).",
+                "summary": "Lister ses justificatifs",
+                "tags": [
+                    "ingenieurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Justificatif"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "ingenieurs_moi_justificatifs_create",
+                "description": "Rattache un fichier déjà téléversé en contexte `justificatif`.",
+                "summary": "Déposer un justificatif",
+                "tags": [
+                    "ingenieurs"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JustificatifDepotRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JustificatifDepotRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Justificatif"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/ingenieurs/moi/profil/": {
+            "get": {
+                "operationId": "ingenieurs_moi_profil_retrieve",
+                "description": "GET/PUT /ingenieurs/moi/profil — accessible même en attente de validation.",
+                "summary": "Consulter son profil professionnel",
+                "tags": [
+                    "ingenieurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IngenieurProfil"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "ingenieurs_moi_profil_update",
+                "description": "Spécialités (référentiel), zone (centre + rayon), tarif borné par les paramètres de consultation, disponibilité, biographie, modalités, photo. La mise en disponibilité exige un profil complet et validé.",
+                "summary": "Mettre à jour son profil professionnel",
+                "tags": [
+                    "ingenieurs"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IngenieurProfilRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IngenieurProfilRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IngenieurProfil"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "422": {
+                        "description": "validation_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/livreurs/moi/disponibilite/": {
+            "get": {
+                "operationId": "livreurs_moi_disponibilite_retrieve",
+                "description": "GET/PUT /livreurs/moi/disponibilite — bouton disponible/indisponible (LIV-01).",
+                "summary": "Consulter sa disponibilité de livreur",
+                "tags": [
+                    "livreurs"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivreurProfil"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "livreurs_moi_disponibilite_update",
+                "description": "Se rendre disponible exige une position (GeoJSON Point dans l'emprise du Cameroun) au moins une fois.",
+                "summary": "Se rendre disponible ou indisponible",
+                "tags": [
+                    "livreurs"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DisponibiliteLivreurRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DisponibiliteLivreurRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivreurProfil"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/": {
+            "get": {
+                "operationId": "notifications_retrieve",
+                "description": "GET /notifications — la liste du destinataire courant.",
+                "summary": "Lister ses notifications",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "non_lues",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Filtrer sur les non lues"
+                    }
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeNotifications"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/{id}/lue/": {
+            "post": {
+                "operationId": "notifications_lue_create",
+                "description": "POST /notifications/{id}/lue — destinataire uniquement (autrui → 404).",
+                "summary": "Marquer une notification comme lue",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notification"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/compteur/": {
+            "get": {
+                "operationId": "notifications_compteur_retrieve",
+                "description": "GET /notifications/compteur — nombre de non lues (cloche, polling 30 s).",
+                "summary": "Compteur de notifications non lues",
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/tout-lire/": {
+            "post": {
+                "operationId": "notifications_tout_lire_create",
+                "description": "POST /notifications/tout-lire — marque toutes les non lues comme lues.",
+                "summary": "Marquer toutes les notifications comme lues",
+                "tags": [
+                    "notifications"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
                     }
                 }
             }
@@ -451,6 +1662,11 @@
                             "schema": {
                                 "$ref": "#/components/schemas/PatchedMiseAJourMoiRequest"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedMiseAJourMoiRequest"
+                            }
                         }
                     }
                 },
@@ -521,6 +1737,11 @@
                             "schema": {
                                 "$ref": "#/components/schemas/AdresseCreationRequest"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AdresseCreationRequest"
+                            }
                         }
                     },
                     "required": true
@@ -569,6 +1790,11 @@
                 "requestBody": {
                     "content": {
                         "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedAdresseModificationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/PatchedAdresseModificationRequest"
                             }
@@ -640,6 +1866,11 @@
                             "schema": {
                                 "$ref": "#/components/schemas/MotDePasseRequest"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotDePasseRequest"
+                            }
                         }
                     },
                     "required": true
@@ -694,9 +1925,8 @@
                             },
                             "coordinates": {
                                 "type": "array",
-                                "items": {
-                                    "type": "number"
-                                }
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
                             }
                         },
                         "required": [
@@ -756,9 +1986,8 @@
                             },
                             "coordinates": {
                                 "type": "array",
-                                "items": {
-                                    "type": "number"
-                                }
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
                             }
                         },
                         "required": [
@@ -785,6 +2014,26 @@
                     "ville"
                 ]
             },
+            "CompteursAdmin": {
+                "type": "object",
+                "description": "GET /admin/utilisateurs/compteurs — bandeaux ADM-01 (F-03 frontend point 5).",
+                "properties": {
+                    "ingenieurs_en_attente": {
+                        "type": "integer"
+                    },
+                    "reinitialisations_en_attente": {
+                        "type": "integer"
+                    },
+                    "comptes_suspendus": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "comptes_suspendus",
+                    "ingenieurs_en_attente",
+                    "reinitialisations_en_attente"
+                ]
+            },
             "ConnexionRequest": {
                 "type": "object",
                 "description": "POST /auth/connexion — téléphone E.164 ou email + mot de passe.",
@@ -805,6 +2054,62 @@
                     "mot_de_passe"
                 ]
             },
+            "ContexteEnum": {
+                "enum": [
+                    "produit",
+                    "signalement",
+                    "accompagnement",
+                    "justificatif",
+                    "chat",
+                    "incident"
+                ],
+                "type": "string",
+                "description": "* `produit` - Photo de produit\n* `signalement` - Pièce d'un signalement\n* `accompagnement` - Fichier d'un accompagnement\n* `justificatif` - Justificatif professionnel\n* `chat` - Fichier de conversation\n* `incident` - Photo d'incident de livraison"
+            },
+            "CreationAdminRequest": {
+                "type": "object",
+                "description": "POST /admin/utilisateurs (super-admin) — création d'un compte admin.",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20
+                    },
+                    "email": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "role": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RoleAdministrationEnum"
+                            }
+                        ],
+                        "default": "admin"
+                    },
+                    "region": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "nom",
+                    "telephone"
+                ]
+            },
             "DemandeReinitialisationRequest": {
                 "type": "object",
                 "description": "POST /auth/demande-reinitialisation (Q-23) — téléphone du compte.",
@@ -817,6 +2122,509 @@
                 },
                 "required": [
                     "telephone"
+                ]
+            },
+            "DisponibiliteLivreurRequest": {
+                "type": "object",
+                "description": "PUT /livreurs/moi/disponibilite — disponible + position optionnelle.",
+                "properties": {
+                    "disponible": {
+                        "type": "boolean"
+                    },
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "nullable": true
+                    },
+                    "zone": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "disponible"
+                ]
+            },
+            "Exploitation": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "parcelle": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    },
+                    "centre": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "readOnly": true
+                    },
+                    "superficie_ha": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$"
+                    },
+                    "superficie_calculee_ha": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
+                        "readOnly": true
+                    },
+                    "type_sol": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "region": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "localite": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ExploitationStatutEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "nombre_produits": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "dernier_planning": {
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "centre",
+                    "cree_le",
+                    "dernier_planning",
+                    "id",
+                    "maj_le",
+                    "nom",
+                    "nombre_produits",
+                    "parcelle",
+                    "region",
+                    "statut",
+                    "superficie_calculee_ha",
+                    "superficie_ha",
+                    "type_sol"
+                ]
+            },
+            "ExploitationCreationRequest": {
+                "type": "object",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "parcelle": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    },
+                    "superficie_ha": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
+                        "nullable": true
+                    },
+                    "type_sol": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "region": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "localite": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "nom",
+                    "parcelle",
+                    "region",
+                    "type_sol"
+                ]
+            },
+            "ExploitationStatutEnum": {
+                "enum": [
+                    "active",
+                    "archivee"
+                ],
+                "type": "string",
+                "description": "* `active` - Active\n* `archivee` - Archivée"
+            },
+            "Fichier": {
+                "type": "object",
+                "description": "Représentation publique d'un fichier (sans chemin de stockage).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "contexte": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ContexteEnum"
+                            }
+                        ],
+                        "readOnly": true,
+                        "description": "Usage annoncé à l'upload ; détermine les règles d'accès\n\n* `produit` - Photo de produit\n* `signalement` - Pièce d'un signalement\n* `accompagnement` - Fichier d'un accompagnement\n* `justificatif` - Justificatif professionnel\n* `chat` - Fichier de conversation\n* `incident` - Photo d'incident de livraison"
+                    },
+                    "nom_original": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Nom donné par le client, affiché pour rappel uniquement"
+                    },
+                    "type_mime": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Type détecté sur le contenu (filetype), pas sur l'extension"
+                    },
+                    "taille_octets": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "description": "Taille en octets après traitement (EXIF retiré)"
+                    },
+                    "public": {
+                        "type": "boolean",
+                        "readOnly": true,
+                        "description": "True seulement pour les photos de produits"
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "contexte",
+                    "cree_le",
+                    "id",
+                    "nom_original",
+                    "public",
+                    "taille_octets",
+                    "type_mime"
+                ]
+            },
+            "IngenieurProfil": {
+                "type": "object",
+                "description": "GET/PUT /ingenieurs/moi/profil — vue complète pour l'ingénieur lui-même.",
+                "properties": {
+                    "specialites": {
+                        "description": "Liste de codes du référentiel `specialite` (validés par le service)"
+                    },
+                    "region": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Région d'intervention (filtre GET /ingenieurs)",
+                        "maxLength": 100
+                    },
+                    "zone_centre": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "nullable": true
+                    },
+                    "zone_rayon_km": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "nullable": true,
+                        "description": "Rayon d'intervention en km, borné par le paramètre plateforme"
+                    },
+                    "tarif_consultation_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "nullable": true,
+                        "description": "Prix de la consultation en FCFA (entier), hors déplacement"
+                    },
+                    "disponible": {
+                        "type": "boolean"
+                    },
+                    "biographie": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "modalites": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Modalités d'intervention (déplacements, visio, créneaux…)"
+                    },
+                    "photo_id": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "statut_validation": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutValidationEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "motif_refus": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "valide_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "justificatifs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "justificatifs",
+                    "motif_refus",
+                    "photo_id",
+                    "statut_validation",
+                    "valide_le"
+                ]
+            },
+            "IngenieurProfilRequest": {
+                "type": "object",
+                "description": "GET/PUT /ingenieurs/moi/profil — vue complète pour l'ingénieur lui-même.",
+                "properties": {
+                    "specialites": {
+                        "description": "Liste de codes du référentiel `specialite` (validés par le service)"
+                    },
+                    "region": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Région d'intervention (filtre GET /ingenieurs)",
+                        "maxLength": 100
+                    },
+                    "zone_centre": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "nullable": true
+                    },
+                    "zone_rayon_km": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "nullable": true,
+                        "description": "Rayon d'intervention en km, borné par le paramètre plateforme"
+                    },
+                    "tarif_consultation_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "nullable": true,
+                        "description": "Prix de la consultation en FCFA (entier), hors déplacement"
+                    },
+                    "disponible": {
+                        "type": "boolean"
+                    },
+                    "biographie": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "modalites": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Modalités d'intervention (déplacements, visio, créneaux…)"
+                    }
+                }
+            },
+            "IngenieurPublic": {
+                "type": "object",
+                "description": "GET /ingenieurs et /ingenieurs/{id} — profil public, sans téléphone (03).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "specialites": {
+                        "description": "Liste de codes du référentiel `specialite` (validés par le service)"
+                    },
+                    "region": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Région d'intervention (filtre GET /ingenieurs)",
+                        "maxLength": 100
+                    },
+                    "zone_centre": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "readOnly": true
+                    },
+                    "zone_rayon_km": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "nullable": true,
+                        "description": "Rayon d'intervention en km, borné par le paramètre plateforme"
+                    },
+                    "tarif_consultation_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648,
+                        "nullable": true,
+                        "description": "Prix de la consultation en FCFA (entier), hors déplacement"
+                    },
+                    "disponible": {
+                        "type": "boolean"
+                    },
+                    "biographie": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "modalites": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Modalités d'intervention (déplacements, visio, créneaux…)"
+                    },
+                    "photo_id": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "nom",
+                    "photo_id",
+                    "zone_centre"
                 ]
             },
             "InscriptionRequest": {
@@ -852,7 +2660,7 @@
                         "minLength": 8
                     },
                     "role": {
-                        "$ref": "#/components/schemas/InscriptionRoleEnum"
+                        "$ref": "#/components/schemas/RoleInscriptionEnum"
                     },
                     "region": {
                         "type": "string",
@@ -866,15 +2674,231 @@
                     "telephone"
                 ]
             },
-            "InscriptionRoleEnum": {
+            "Justificatif": {
+                "type": "object",
+                "description": "Pièce justificative avec son fichier (sans chemin de stockage).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TypeJustificatifEnum"
+                            }
+                        ],
+                        "readOnly": true,
+                        "description": "Nature du document\n\n* `diplome` - Diplôme\n* `piece_identite` - Pièce d'identité\n* `autre` - Autre"
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/JustificatifStatutEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "fichier": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Fichier"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "fichier",
+                    "id",
+                    "statut",
+                    "type"
+                ]
+            },
+            "JustificatifDepotRequest": {
+                "type": "object",
+                "description": "POST /ingenieurs/moi/justificatifs — fichier déjà téléversé (`fichier_id`).",
+                "properties": {
+                    "fichier_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/TypeJustificatifEnum"
+                    }
+                },
+                "required": [
+                    "fichier_id",
+                    "type"
+                ]
+            },
+            "JustificatifStatutEnum": {
                 "enum": [
-                    "acheteur",
-                    "agriculteur",
-                    "ingenieur_agronome",
-                    "livreur"
+                    "soumise",
+                    "acceptee",
+                    "rejetee"
                 ],
                 "type": "string",
-                "description": "* `acheteur` - acheteur\n* `agriculteur` - agriculteur\n* `ingenieur_agronome` - ingenieur_agronome\n* `livreur` - livreur"
+                "description": "* `soumise` - Soumise\n* `acceptee` - Acceptée\n* `rejetee` - Rejetée"
+            },
+            "ListeDemandesReinitialisation": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UtilisateurAdminListe"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
+            "ListeIngenieurs": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IngenieurPublic"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
+            "ListeNotifications": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Notification"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
+            "ListeUtilisateursAdmin": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UtilisateurAdminListe"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
+            "LivreurProfil": {
+                "type": "object",
+                "description": "GET /livreurs/moi/disponibilite — état courant du profil livreur.",
+                "properties": {
+                    "disponible": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "position_maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "zone": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Zone d'intervention déclarée"
+                    }
+                },
+                "required": [
+                    "disponible",
+                    "position",
+                    "position_maj_le",
+                    "zone"
+                ]
             },
             "MotDePasseRequest": {
                 "type": "object",
@@ -894,6 +2918,88 @@
                 "required": [
                     "mot_de_passe_actuel",
                     "nouveau_mot_de_passe"
+                ]
+            },
+            "MotDePasseTemporaire": {
+                "type": "object",
+                "description": "Réponse du mot de passe temporaire (Q-23) — affiché une seule fois.",
+                "properties": {
+                    "mot_de_passe_temporaire": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "doit_changer_mot_de_passe": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "doit_changer_mot_de_passe",
+                    "message",
+                    "mot_de_passe_temporaire"
+                ]
+            },
+            "Notification": {
+                "type": "object",
+                "description": "Notification ; l'état lu est exposé par le champ dérivé `non_lue`.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TypeNotificationEnum"
+                            }
+                        ],
+                        "readOnly": true,
+                        "description": "Catégorie affichée dans FE-05\n\n* `commande` - Commande\n* `paiement` - Paiement\n* `livraison` - Livraison\n* `accompagnement` - Accompagnement\n* `abonnement` - Abonnement\n* `administration` - Administration\n* `signalement` - Signalement"
+                    },
+                    "titre": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "contenu": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "lien": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Chemin applicatif à ouvrir (ex. /admin/utilisateurs) ; null si sans cible"
+                    },
+                    "non_lue": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "lue_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Date de lecture ; null = non lue"
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "contenu",
+                    "cree_le",
+                    "id",
+                    "lien",
+                    "lue_le",
+                    "non_lue",
+                    "titre",
+                    "type"
                 ]
             },
             "PatchedAdresseModificationRequest": {
@@ -916,9 +3022,8 @@
                             },
                             "coordinates": {
                                 "type": "array",
-                                "items": {
-                                    "type": "number"
-                                }
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
                             }
                         },
                         "required": [
@@ -935,6 +3040,54 @@
                     "region": {
                         "type": "string",
                         "minLength": 1,
+                        "maxLength": 100
+                    }
+                }
+            },
+            "PatchedExploitationModificationRequest": {
+                "type": "object",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "parcelle": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    },
+                    "superficie_ha": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,4})?$",
+                        "nullable": true
+                    },
+                    "type_sol": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "region": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "localite": {
+                        "type": "string",
                         "maxLength": 100
                     }
                 }
@@ -999,6 +3152,19 @@
                     "libelle"
                 ]
             },
+            "RefusIngenieurRequest": {
+                "type": "object",
+                "description": "POST /admin/ingenieurs/{id}/refuser — presence de `motif` documentée ;\nle contrôle métier (motif non vide → 422 `motif_obligatoire`) reste dans\nle service, seul point de vérité (conventions §3).",
+                "properties": {
+                    "motif": {
+                        "type": "string",
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "motif"
+                ]
+            },
             "ReponseMessage": {
                 "type": "object",
                 "description": "Réponse neutre uniforme (demande de réinitialisation, Q-23).",
@@ -1058,6 +3224,36 @@
                     "statut",
                     "tache"
                 ]
+            },
+            "RoleAdministrationEnum": {
+                "enum": [
+                    "admin",
+                    "super_admin"
+                ],
+                "type": "string",
+                "description": "* `admin` - admin\n* `super_admin` - super_admin"
+            },
+            "RoleInscriptionEnum": {
+                "enum": [
+                    "acheteur",
+                    "agriculteur",
+                    "ingenieur_agronome",
+                    "livreur"
+                ],
+                "type": "string",
+                "description": "* `acheteur` - acheteur\n* `agriculteur` - agriculteur\n* `ingenieur_agronome` - ingenieur_agronome\n* `livreur` - livreur"
+            },
+            "RoleUtilisateurEnum": {
+                "enum": [
+                    "agriculteur",
+                    "acheteur",
+                    "ingenieur_agronome",
+                    "livreur",
+                    "admin",
+                    "super_admin"
+                ],
+                "type": "string",
+                "description": "* `agriculteur` - Agriculteur\n* `acheteur` - Acheteur\n* `ingenieur_agronome` - Ingénieur agronome\n* `livreur` - Livreur\n* `admin` - Administrateur\n* `super_admin` - Super administrateur"
             },
             "SanteLivenessResponse": {
                 "type": "object",
@@ -1123,6 +3319,68 @@
                 "type": "string",
                 "description": "* `actif` - Actif\n* `en_attente_validation` - En attente de validation\n* `suspendu` - Suspendu\n* `anonymise` - Anonymisé"
             },
+            "StatutValidationEnum": {
+                "enum": [
+                    "en_attente",
+                    "valide",
+                    "refuse"
+                ],
+                "type": "string",
+                "description": "* `en_attente` - En attente\n* `valide` - Validé\n* `refuse` - Refusé"
+            },
+            "SuspendreRequest": {
+                "type": "object",
+                "description": "POST /admin/utilisateurs/{id}/suspendre — motif obligatoire (affiché au user).",
+                "properties": {
+                    "motif": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "motif"
+                ]
+            },
+            "TeleversementRequest": {
+                "type": "object",
+                "description": "POST /fichiers — multipart : `fichier` (binaire) + `contexte`.",
+                "properties": {
+                    "fichier": {
+                        "type": "string",
+                        "format": "binary"
+                    },
+                    "contexte": {
+                        "$ref": "#/components/schemas/ContexteEnum"
+                    }
+                },
+                "required": [
+                    "contexte",
+                    "fichier"
+                ]
+            },
+            "TypeJustificatifEnum": {
+                "enum": [
+                    "diplome",
+                    "piece_identite",
+                    "autre"
+                ],
+                "type": "string",
+                "description": "* `diplome` - Diplôme\n* `piece_identite` - Pièce d'identité\n* `autre` - Autre"
+            },
+            "TypeNotificationEnum": {
+                "enum": [
+                    "commande",
+                    "paiement",
+                    "livraison",
+                    "accompagnement",
+                    "abonnement",
+                    "administration",
+                    "signalement"
+                ],
+                "type": "string",
+                "description": "* `commande` - Commande\n* `paiement` - Paiement\n* `livraison` - Livraison\n* `accompagnement` - Accompagnement\n* `abonnement` - Abonnement\n* `administration` - Administration\n* `signalement` - Signalement"
+            },
             "Utilisateur": {
                 "type": "object",
                 "description": "Représentation de « moi » pour tout utilisateur connecté.",
@@ -1151,7 +3409,7 @@
                     "role": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/UtilisateurRoleEnum"
+                                "$ref": "#/components/schemas/RoleUtilisateurEnum"
                             }
                         ],
                         "readOnly": true
@@ -1205,17 +3463,168 @@
                     "telephone"
                 ]
             },
-            "UtilisateurRoleEnum": {
-                "enum": [
-                    "agriculteur",
-                    "acheteur",
-                    "ingenieur_agronome",
-                    "livreur",
-                    "admin",
-                    "super_admin"
-                ],
-                "type": "string",
-                "description": "* `agriculteur` - Agriculteur\n* `acheteur` - Acheteur\n* `ingenieur_agronome` - Ingénieur agronome\n* `livreur` - Livreur\n* `admin` - Administrateur\n* `super_admin` - Super administrateur"
+            "UtilisateurAdminDetail": {
+                "type": "object",
+                "description": "GET /admin/utilisateurs/{id} — toutes les infos nécessaires à l'admin.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Nom complet ou raison sociale"
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Numéro de téléphone au format E.164 (+237XXXXXXXXX)"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Adresse email facultative"
+                    },
+                    "role": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RoleUtilisateurEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "statut_compte": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutCompteEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "region": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "doit_changer_mot_de_passe": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "reinitialisation_demandee_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "derniere_connexion_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "profil_ingenieur": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "derniere_connexion_le",
+                    "doit_changer_mot_de_passe",
+                    "email",
+                    "id",
+                    "nom",
+                    "profil_ingenieur",
+                    "region",
+                    "reinitialisation_demandee_le",
+                    "role",
+                    "statut_compte",
+                    "telephone"
+                ]
+            },
+            "UtilisateurAdminListe": {
+                "type": "object",
+                "description": "Ligne de GET /admin/utilisateurs — identité, rôle, statut, drapeaux.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Nom complet ou raison sociale"
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Masqué en liste (conventions §6) ; complet dans le détail."
+                    },
+                    "role": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RoleUtilisateurEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "statut_compte": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutCompteEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "region": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "doit_changer_mot_de_passe": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "reinitialisation_demandee_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "derniere_connexion_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "derniere_connexion_le",
+                    "doit_changer_mot_de_passe",
+                    "id",
+                    "nom",
+                    "region",
+                    "reinitialisation_demandee_le",
+                    "role",
+                    "statut_compte",
+                    "telephone"
+                ]
             }
         },
         "securitySchemes": {

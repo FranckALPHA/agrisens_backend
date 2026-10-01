@@ -14,6 +14,7 @@ import pytest
 from apps.utilisateurs.services import SessionService
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
+
 from tests.aides_permissions import verifier_garde_route as _verifier_garde_route
 
 Utilisateur = get_user_model()

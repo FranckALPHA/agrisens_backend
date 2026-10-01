@@ -14,7 +14,9 @@ Réponse :
 from typing import Any
 
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 
 
 class PaginationStandard(PageNumberPagination):
@@ -58,3 +60,34 @@ class PaginationStandard(PageNumberPagination):
             },
             "required": ["elements", "page", "taille", "total"],
         }
+
+
+def reponse_liste(
+    request: Request, queryset: Any, serializer_class: type[BaseSerializer]
+) -> Response:
+    """Réponse de liste paginée pour les `APIView` (DRF ne fournit pas
+    `paginate_queryset` hors des vues génériques) : page courante sérialisée
+    dans l'enveloppe {elements, page, taille, total}, sinon liste complète."""
+    paginator = PaginationStandard()
+    page: Any = paginator.paginate_queryset(queryset, request)
+    if page is not None:
+        return paginator.get_paginated_response(serializer_class(page, many=True).data)
+    return Response(serializer_class(queryset, many=True).data)
+
+
+def schema_enveloppe_liste(nom: str, element: type[BaseSerializer]) -> Any:
+    """Schéma OpenAPI de l'enveloppe paginée pour `@extend_schema` sur les
+    `APIView` : `reponse_liste` n'est pas détectée automatiquement par
+    drf-spectacular (réservé aux vues génériques), donc on le documente."""
+    from drf_spectacular.utils import inline_serializer
+    from rest_framework import serializers as drf_serializers
+
+    return inline_serializer(
+        name=nom,
+        fields={
+            "elements": element(many=True),
+            "page": drf_serializers.IntegerField(),
+            "taille": drf_serializers.IntegerField(),
+            "total": drf_serializers.IntegerField(),
+        },
+    )
