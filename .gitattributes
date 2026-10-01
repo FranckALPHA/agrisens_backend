@@ -1,0 +1,3 @@
+# Fin de lignes LF dans le dépôt et les copies de travail (Windows compris).
+# `text=auto` laisse Git détecter les binaires.
+* text=auto eol=lf
