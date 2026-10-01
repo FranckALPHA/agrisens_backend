@@ -9,7 +9,6 @@ from django.http import FileResponse, HttpResponseRedirect
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -48,7 +47,9 @@ class VueTeleversementFichier(APIView):
 class VueFichierDetail(APIView):
     """GET /fichiers/{id} — redirection vers une URL signée de courte durée."""
 
-    permission_classes = [IsAuthenticated]
+    # Compte actif ou en attente (le propriétaire d'un justificatif peut être
+    # en attente de validation) ; un compte suspendu est refusé ici (403).
+    permission_classes = [AutoriseEnAttente]
 
     @extend_schema(
         summary="Obtenir un fichier",

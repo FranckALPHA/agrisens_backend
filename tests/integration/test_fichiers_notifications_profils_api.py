@@ -395,9 +395,105 @@ def test_liste_admin_recherche_et_compteurs(
 
 
 @pytest.mark.integration
+def test_detail_admin_ingenieur_avec_justificatifs(
+    client_authentifie: Any, service_tmp: ServiceFichiers
+) -> None:
+    """GET /admin/utilisateurs/{id} sérialise le dossier + pièces (ex-500 DRF)."""
+    nadia_client, nadia = client_authentifie(
+        role="ingenieur_agronome", statut_compte="en_attente_validation"
+    )
+    fichier = _upload_jpeg(nadia_client, contexte="justificatif")
+    depot = nadia_client.post(
+        f"{API}/ingenieurs/moi/justificatifs",
+        {"fichier_id": fichier["id"], "type": "diplome"},
+        format="json",
+    )
+    assert depot.status_code == 201, depot.data
+    admin_client, _ = client_authentifie(role="admin")
+    detail = admin_client.get(f"{API}/admin/utilisateurs/{nadia.id}")
+    assert detail.status_code == 200, detail.data
+    dossier = detail.json()["profil_ingenieur"]
+    assert dossier["statut_validation"] == "en_attente"
+    assert len(dossier["justificatifs"]) == 1
+    assert dossier["justificatifs"][0]["fichier_id"] == fichier["id"]
+    assert dossier["justificatifs"][0]["nom_original"] == "photo.jpg"
+
+
+@pytest.mark.integration
 def test_garde_routes_fichiers_notifications_sans_jeton(client_api: Any) -> None:
     assert client_api.post(FICHIERS, {}, format="multipart").status_code == 401
     assert client_api.get(NOTIFICATIONS).status_code == 401
     assert client_api.get(f"{NOTIFICATIONS}/compteur").status_code == 401
     assert client_api.get(f"{API}/ingenieurs").status_code == 401
     assert client_api.get(f"{API}/admin/utilisateurs").status_code == 401
+
+
+@pytest.mark.integration
+def test_compte_suspendu_ne_telecharge_plus_ses_fichiers(
+    client_authentifie: Any, service_tmp: ServiceFichiers
+) -> None:
+    """Un compte suspendu reçoit 403 (pas de 302) sur ses propres fichiers."""
+    client, utilisateur = client_authentifie(role="agriculteur")
+    fichier = _upload_jpeg(client, contexte="produit")
+    assert client.get(f"{FICHIERS}/{fichier['id']}", follow=False).status_code == 302
+    utilisateur.statut_compte = StatutCompte.SUSPENDU
+    utilisateur.save(update_fields=["statut_compte"])
+    reponse = client.get(f"{FICHIERS}/{fichier['id']}", follow=False)
+    assert reponse.status_code == 403
+    assert reponse.json()["erreur"]["code"] == "compte_suspendu"
+
+
+@pytest.mark.integration
+def test_photo_profil_accepte_tout_fichier_image_du_proprietaire(
+    client_authentifie: Any, service_tmp: ServiceFichiers
+) -> None:
+    """ING-02 : une image téléversée en contexte `produit` convient comme photo."""
+    client, _ = client_authentifie(role="ingenieur_agronome")
+    fichier = _upload_jpeg(client, contexte="produit")
+    reponse = client.put(
+        f"{API}/ingenieurs/moi/profil",
+        {"photo_id": fichier["id"]},
+        format="json",
+    )
+    assert reponse.status_code == 200, reponse.data
+
+
+@pytest.mark.integration
+def test_disponibilite_exige_des_justificatifs_deposes(
+    client_authentifie: Any, service_tmp: ServiceFichiers
+) -> None:
+    """Disponible seulement avec dossier complet : profil + justificatifs + validation."""
+    nadia_client, nadia = client_authentifie(
+        role="ingenieur_agronome", statut_compte="en_attente_validation"
+    )
+    profil = nadia_client.put(
+        f"{API}/ingenieurs/moi/profil",
+        {
+            "specialites": ["maraichage"],
+            "region": "littoral",
+            "zone_centre": POINT_DOUALA,
+            "zone_rayon_km": 30,
+            "tarif_consultation_fcfa": 8_000,
+        },
+        format="json",
+    )
+    assert profil.status_code == 200, profil.data
+    admin_client, _ = client_authentifie(role="admin")
+    validation = admin_client.post(f"{API}/admin/ingenieurs/{nadia.id}/valider", {}, format="json")
+    assert validation.status_code == 200, validation.data
+
+    refuse = nadia_client.put(f"{API}/ingenieurs/moi/profil", {"disponible": True}, format="json")
+    assert refuse.status_code == 422
+    assert refuse.json()["erreur"]["code"] == "profil_incomplet"
+    assert "justificatifs" in refuse.json()["erreur"]["details"]["champs_manquants"]
+
+    fichier = _upload_jpeg(nadia_client, contexte="justificatif")
+    depot = nadia_client.post(
+        f"{API}/ingenieurs/moi/justificatifs",
+        {"fichier_id": fichier["id"], "type": "diplome"},
+        format="json",
+    )
+    assert depot.status_code == 201, depot.data
+    accepte = nadia_client.put(f"{API}/ingenieurs/moi/profil", {"disponible": True}, format="json")
+    assert accepte.status_code == 200, accepte.data
+    assert accepte.json()["disponible"] is True

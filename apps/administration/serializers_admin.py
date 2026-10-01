@@ -50,7 +50,7 @@ class JustificatifAdminSerializer(serializers.Serializer):
     id = serializers.CharField()
     type = serializers.CharField()
     statut = serializers.CharField()
-    fichier_id = serializers.CharField(source="fichier_id")
+    fichier_id = serializers.CharField()
     nom_original = serializers.CharField(source="fichier.nom_original")
     type_mime = serializers.CharField(source="fichier.type_mime")
     cree_le = serializers.DateTimeField()

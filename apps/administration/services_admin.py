@@ -216,7 +216,7 @@ class ServiceAdminUtilisateurs:
         if id_utilisateur == admin.id:
             raise ErreurMetier(
                 code="permission_refusee",
-                message="Un administrateur ne peut pas suspendre son propre compte.",
+                message="Un administrateur ne peut pas agir sur son propre compte.",
                 statut_http=status.HTTP_403_FORBIDDEN,
             )
         cible = Utilisateur.objects.filter(id=id_utilisateur).first()

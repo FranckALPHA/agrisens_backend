@@ -264,6 +264,7 @@ class Command(BaseCommand):
             defaults={
                 "disponible": False,
                 "position": POINT_YAOUNDE,
+                "position_maj_le": maintenant(),
                 "zone": "centre",
             },
         )
