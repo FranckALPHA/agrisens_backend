@@ -165,7 +165,7 @@ class ServiceProduit:
         requete = Produit.objects.filter(
             statut=StatutProduit.DISPONIBLE,
             exploitation__statut=StatutExploitation.ACTIVE,
-        ).select_related("exploitation")
+        ).select_related("exploitation", "exploitation__agriculteur")
         if categorie:
             requete = requete.filter(categorie=categorie)
         if region:
@@ -193,7 +193,7 @@ class ServiceProduit:
                 statut=StatutProduit.DISPONIBLE,
                 exploitation__statut=StatutExploitation.ACTIVE,
             )
-            .select_related("exploitation")
+            .select_related("exploitation", "exploitation__agriculteur")
             .first()
         )
         if produit is None:

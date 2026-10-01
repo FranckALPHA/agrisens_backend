@@ -178,12 +178,16 @@ def test_catalogue_public_filtres_tri_pagination_et_vie_privee(
     page = client_api.get(f"{PRODUITS}?taille=1&page=2")
     assert page.json()["total"] == 2 and len(page.json()["elements"]) == 1
 
-    # Vie privée (D-21) : ni téléphone (+237), ni coordonnées, ni identifiants.
+    # Vie privée (D-21) : ni téléphone (+237), ni coordonnées, ni stock réservé.
+    # `agriculteur_id` (UUID opaque) est volontairement exposé pour la règle
+    # du panier à un seul agriculteur (F-06) ; le serveur retranche.
     import json as _json
 
     brut = _json.dumps(client_api.get(PRODUITS).json())
     assert "+237" not in brut and "quantite_reservee" not in brut
-    assert "agriculteur_id" not in brut and "position" not in brut
+    assert "position" not in brut
+    catalogue = client_api.get(PRODUITS).json()
+    assert catalogue["elements"][0]["agriculteur_id"]
     detail = client_api.get(f"{PRODUITS}/{corps['elements'][0]['id']}")
     assert detail.json()["producteur_nom"]
     assert "telephone" not in detail.json()

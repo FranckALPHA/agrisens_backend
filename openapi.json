@@ -644,6 +644,396 @@
                 }
             }
         },
+        "/api/v1/commandes/": {
+            "post": {
+                "operationId": "commandes_create",
+                "summary": "Passer une commande (un seul agriculteur)",
+                "tags": [
+                    "commandes"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreationCommandeRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreationCommandeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommandeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/": {
+            "get": {
+                "operationId": "commandes_retrieve",
+                "summary": "Consulter une commande",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommandeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Commande introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/accepter/": {
+            "post": {
+                "operationId": "commandes_accepter_create",
+                "summary": "Accepter une commande (réserve le stock)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommandeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/annuler/": {
+            "post": {
+                "operationId": "commandes_annuler_create",
+                "summary": "Annuler une commande avant paiement",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommandeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/historique/": {
+            "get": {
+                "operationId": "commandes_historique_list",
+                "summary": "Historique des statuts d'une commande",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LigneHistorique"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/preparer/": {
+            "post": {
+                "operationId": "commandes_preparer_create",
+                "summary": "Marquer une commande payée en préparation",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommandeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/rejeter/": {
+            "post": {
+                "operationId": "commandes_rejeter_create",
+                "summary": "Rejeter une commande (motif obligatoire)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotifRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotifRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommandeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/devis/": {
+            "post": {
+                "operationId": "commandes_devis_create",
+                "summary": "Chiffrer une commande sans la créer",
+                "tags": [
+                    "commandes"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DevisRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DevisRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Devis calculé"
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/mes-achats/": {
+            "get": {
+                "operationId": "commandes_mes_achats_retrieve",
+                "summary": "Lister mes achats",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "statut",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre de statut"
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeCommandes"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/mes-ventes/": {
+            "get": {
+                "operationId": "commandes_mes_ventes_retrieve",
+                "summary": "Lister mes ventes",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "statut",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre de statut"
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeCommandes"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/dev/horloge": {
             "post": {
                 "operationId": "dev_horloge_create",
@@ -2540,6 +2930,167 @@
                     "total"
                 ]
             },
+            "CommandeDetail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "reference": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "statut": {
+                        "$ref": "#/components/schemas/StatutCommandeEnum"
+                    },
+                    "lignes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LigneCommande"
+                        },
+                        "readOnly": true
+                    },
+                    "adresse_livraison": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "adresse_exacte_visible": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "zone_livraison": {
+                        "type": "string",
+                        "description": "Zone affichée à l'agriculteur avant paiement (D-21)",
+                        "maxLength": 200
+                    },
+                    "distance_km": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "sous_total_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "frais_livraison_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "total_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "parametres_appliques": {},
+                    "expire_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "motif_rejet": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "agriculteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "acheteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "acheteur_nom",
+                    "adresse_exacte_visible",
+                    "adresse_livraison",
+                    "agriculteur_nom",
+                    "cree_le",
+                    "distance_km",
+                    "frais_livraison_fcfa",
+                    "id",
+                    "lignes",
+                    "reference",
+                    "sous_total_fcfa",
+                    "total_fcfa"
+                ]
+            },
+            "CommandeListe": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "reference": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "statut": {
+                        "$ref": "#/components/schemas/StatutCommandeEnum"
+                    },
+                    "total_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "sous_total_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "frais_livraison_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "agriculteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "acheteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nombre_lignes": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "expire_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "acheteur_nom",
+                    "agriculteur_nom",
+                    "cree_le",
+                    "frais_livraison_fcfa",
+                    "id",
+                    "nombre_lignes",
+                    "reference",
+                    "sous_total_fcfa",
+                    "total_fcfa"
+                ]
+            },
             "CompteursAdmin": {
                 "type": "object",
                 "description": "GET /admin/utilisateurs/compteurs — bandeaux ADM-01 (F-03 frontend point 5).",
@@ -2636,6 +3187,46 @@
                     "telephone"
                 ]
             },
+            "CreationCommandeRequest": {
+                "type": "object",
+                "description": "POST /commandes — mêmes champs que le devis, avec écriture.",
+                "properties": {
+                    "lignes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LigneSaisieRequest"
+                        }
+                    },
+                    "adresse_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "adresse_texte": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    }
+                },
+                "required": [
+                    "lignes"
+                ]
+            },
             "DemandeReinitialisationRequest": {
                 "type": "object",
                 "description": "POST /auth/demande-reinitialisation (Q-23) — téléphone du compte.",
@@ -2648,6 +3239,46 @@
                 },
                 "required": [
                     "telephone"
+                ]
+            },
+            "DevisRequest": {
+                "type": "object",
+                "description": "POST /commandes/devis — lignes + adresse (enregistrée ou saisie).",
+                "properties": {
+                    "lignes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LigneSaisieRequest"
+                        }
+                    },
+                    "adresse_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "adresse_texte": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    }
+                },
+                "required": [
+                    "lignes"
                 ]
             },
             "DisponibiliteLivreurRequest": {
@@ -3274,6 +3905,121 @@
                 "type": "string",
                 "description": "* `soumise` - Soumise\n* `acceptee` - Acceptée\n* `rejetee` - Rejetée"
             },
+            "LigneCommande": {
+                "type": "object",
+                "properties": {
+                    "produit": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom_produit": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "unite": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "quantite": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$",
+                        "readOnly": true
+                    },
+                    "prix_unitaire_fcfa": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "total_ligne_fcfa": {
+                        "type": "integer",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "nom_produit",
+                    "prix_unitaire_fcfa",
+                    "produit",
+                    "quantite",
+                    "total_ligne_fcfa",
+                    "unite"
+                ]
+            },
+            "LigneHistorique": {
+                "type": "object",
+                "properties": {
+                    "ancien_statut": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "nouveau_statut": {
+                        "type": "string"
+                    },
+                    "motif": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "acteur_nom": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "acteur_nom",
+                    "ancien_statut",
+                    "cree_le",
+                    "motif",
+                    "nouveau_statut"
+                ]
+            },
+            "LigneSaisieRequest": {
+                "type": "object",
+                "description": "Ligne du panier envoyée au devis / à la création.",
+                "properties": {
+                    "produit_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "quantite": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$"
+                    }
+                },
+                "required": [
+                    "produit_id",
+                    "quantite"
+                ]
+            },
+            "ListeCommandes": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CommandeListe"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
             "ListeDemandesReinitialisation": {
                 "type": "object",
                 "properties": {
@@ -3493,6 +4239,19 @@
                     "doit_changer_mot_de_passe",
                     "message",
                     "mot_de_passe_temporaire"
+                ]
+            },
+            "MotifRequest": {
+                "type": "object",
+                "description": "Rejet d'une commande : motif obligatoire.",
+                "properties": {
+                    "motif": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "motif"
                 ]
             },
             "Notification": {
@@ -3898,7 +4657,7 @@
             },
             "ProduitCatalogue": {
                 "type": "object",
-                "description": "Vue publique : nom du producteur et région, jamais de téléphone ni de position.",
+                "description": "Vue publique : nom du producteur et région, jamais de téléphone ni de position.\n\nExpose aussi `agriculteur_id` (UUID opaque) : le panier doit vérifier\nqu'une commande concerne un seul agriculteur (D-02), le serveur retranche.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -3934,6 +4693,10 @@
                         "type": "string",
                         "readOnly": true
                     },
+                    "agriculteur_id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "region": {
                         "type": "string",
                         "readOnly": true
@@ -3956,6 +4719,7 @@
                     }
                 },
                 "required": [
+                    "agriculteur_id",
                     "categorie",
                     "cree_le",
                     "id",
@@ -4214,6 +4978,25 @@
                     "migrations_en_attente",
                     "statut"
                 ]
+            },
+            "StatutCommandeEnum": {
+                "enum": [
+                    "en_attente",
+                    "acceptee",
+                    "paiement_en_attente",
+                    "payee",
+                    "preparation",
+                    "remise_au_livreur",
+                    "livree",
+                    "rejetee",
+                    "annulee",
+                    "client_absent",
+                    "echec_livraison",
+                    "remboursement_en_attente",
+                    "remboursee"
+                ],
+                "type": "string",
+                "description": "* `en_attente` - En attente\n* `acceptee` - Acceptée\n* `paiement_en_attente` - Paiement en attente\n* `payee` - Payée\n* `preparation` - En préparation\n* `remise_au_livreur` - Remise au livreur\n* `livree` - Livrée\n* `rejetee` - Rejetée\n* `annulee` - Annulée\n* `client_absent` - Client absent\n* `echec_livraison` - Échec de livraison\n* `remboursement_en_attente` - Remboursement en attente\n* `remboursee` - Remboursée"
             },
             "StatutCompteEnum": {
                 "enum": [

@@ -141,6 +141,7 @@ INSTALLED_APPS = [
     "apps.profils.apps.ProfilsConfig",
     "apps.exploitations.apps.ExploitationsConfig",
     "apps.produits.apps.ProduitsConfig",
+    "apps.commandes.apps.CommandesConfig",
 ]
 
 MIDDLEWARE = [
@@ -236,6 +237,7 @@ SPECTACULAR_SETTINGS = {
         "RoleAdministrationEnum": "apps.administration.serializers_admin.CHOIX_ROLES_ADMIN",
         "TypeNotificationEnum": "apps.notifications.models.TypeNotification",
         "TypeJustificatifEnum": "apps.profils.models.TypeJustificatif",
+        "StatutCommandeEnum": "apps.commandes.models.StatutCommande",
     },
 }
 

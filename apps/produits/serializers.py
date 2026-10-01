@@ -101,9 +101,14 @@ class ProduitModificationSerializer(ProduitSerializer):
 
 
 class ProduitCatalogueSerializer(serializers.ModelSerializer):
-    """Vue publique : nom du producteur et région, jamais de téléphone ni de position."""
+    """Vue publique : nom du producteur et région, jamais de téléphone ni de position.
+
+    Expose aussi `agriculteur_id` (UUID opaque) : le panier doit vérifier
+    qu'une commande concerne un seul agriculteur (D-02), le serveur retranche.
+    """
 
     producteur_nom = serializers.CharField(source="exploitation.agriculteur.nom", read_only=True)
+    agriculteur_id = serializers.CharField(source="exploitation.agriculteur.id", read_only=True)
     region = serializers.CharField(source="exploitation.region", read_only=True)
     localite = serializers.CharField(source="exploitation.localite", read_only=True)
     quantite_disponible = serializers.SerializerMethodField()
@@ -130,6 +135,7 @@ class ProduitCatalogueSerializer(serializers.ModelSerializer):
             "prix_unitaire_fcfa",
             "quantite_disponible",
             "producteur_nom",
+            "agriculteur_id",
             "region",
             "localite",
             "photos",
