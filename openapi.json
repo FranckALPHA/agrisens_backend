@@ -1515,6 +1515,506 @@
                 }
             }
         },
+        "/api/v1/produits/": {
+            "get": {
+                "operationId": "produits_catalogue",
+                "description": "POST /produits (publication, agriculteur) et GET /produits (catalogue public).",
+                "summary": "Consulter le catalogue public",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "categorie",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Code de catégorie"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Page de résultats (défaut 1)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "prix_max",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Prix plafond en FCFA"
+                    },
+                    {
+                        "in": "query",
+                        "name": "prix_min",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Prix plancher en FCFA"
+                    },
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Recherche dans nom et description"
+                    },
+                    {
+                        "in": "query",
+                        "name": "region",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Code de région de l'exploitation"
+                    },
+                    {
+                        "in": "query",
+                        "name": "taille",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Taille de page, 1–100 (défaut 20)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "tri",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "recent (défaut), prix_asc ou prix_desc"
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogueProduits"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "produits_create",
+                "description": "POST /produits (publication, agriculteur) et GET /produits (catalogue public).",
+                "summary": "Publier un produit",
+                "tags": [
+                    "produits"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProduitCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProduitCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Produit"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/produits/{identifiant}/": {
+            "get": {
+                "operationId": "produits_detail",
+                "description": "Le propriétaire reçoit tous les champs (stock réservé, statut) ; les autres visiteurs reçoivent la vue publique, 404 si indisponible.",
+                "summary": "Consulter un produit (vue complète pour le propriétaire)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProduitCatalogue"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Produit indisponible"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "produits_partial_update",
+                "description": "GET /produits/{id} et PATCH /produits/{id}.\n\nGET : le propriétaire reçoit la vue complète (y compris `epuise` et\n`retire` pour gérer son stock) ; tout autre visiteur reçoit la vue\npublique, 404 si le produit n'est pas au catalogue. PATCH : propriétaire.",
+                "summary": "Modifier un produit",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedProduitModificationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedProduitModificationRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Produit"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/produits/{identifiant}/photos/": {
+            "post": {
+                "operationId": "produits_photos_create",
+                "summary": "Ajouter une photo au produit",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhotoAjoutRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhotoAjoutRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoAjout"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "produits_photos_update",
+                "summary": "Réordonner les photos du produit",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhotosOrdreRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhotosOrdreRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotosOrdre"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/produits/{identifiant}/photos/{fichier_id}/": {
+            "delete": {
+                "operationId": "produits_photos_destroy",
+                "summary": "Dissocier une photo du produit",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "fichier_id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Photo dissociée"
+                    }
+                }
+            }
+        },
+        "/api/v1/produits/{identifiant}/retirer/": {
+            "post": {
+                "operationId": "produits_retirer_create",
+                "summary": "Retirer un produit de la vente (historique conservé)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Produit"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/produits/{identifiant}/stock/": {
+            "patch": {
+                "operationId": "produits_stock_partial_update",
+                "summary": "Ajuster le stock (refusé sous la quantité réservée)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedStockRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedStockRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Produit"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/produits/mes-produits/": {
+            "get": {
+                "operationId": "produits_mes_produits_retrieve",
+                "description": "GET /produits/mes-produits — produits de l'agriculteur, tous statuts.",
+                "summary": "Lister mes produits (tous statuts)",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Page de résultats (défaut 1)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "taille",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Taille de page, 1–100 (défaut 20)"
+                    }
+                ],
+                "tags": [
+                    "produits"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MesProduits"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/referentiels/{type_ref}/": {
             "get": {
                 "operationId": "referentiels_list",
@@ -2012,6 +2512,32 @@
                     "position",
                     "region",
                     "ville"
+                ]
+            },
+            "CatalogueProduits": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProduitCatalogue"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
                 ]
             },
             "CompteursAdmin": {
@@ -2900,6 +3426,32 @@
                     "zone"
                 ]
             },
+            "MesProduits": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Produit"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
             "MotDePasseRequest": {
                 "type": "object",
                 "description": "PUT /utilisateurs/moi/mot-de-passe.",
@@ -3125,6 +3677,360 @@
                         "maxLength": 20
                     }
                 }
+            },
+            "PatchedProduitModificationRequest": {
+                "type": "object",
+                "description": "Vue propriétaire : tout le produit, stock réservé compris.",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "categorie": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "unite": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "prix_unitaire_fcfa": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "quantite_stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$"
+                    }
+                }
+            },
+            "PatchedStockRequest": {
+                "type": "object",
+                "description": "PATCH /produits/{id}/stock — stock physique total (≥ réservé).",
+                "properties": {
+                    "quantite_stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$"
+                    }
+                }
+            },
+            "PhotoAjout": {
+                "type": "object",
+                "description": "POST /produits/{id}/photos — rattache un fichier déjà téléversé.",
+                "properties": {
+                    "fichier_id": {
+                        "type": "string"
+                    },
+                    "ordre": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                },
+                "required": [
+                    "fichier_id"
+                ]
+            },
+            "PhotoAjoutRequest": {
+                "type": "object",
+                "description": "POST /produits/{id}/photos — rattache un fichier déjà téléversé.",
+                "properties": {
+                    "fichier_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "ordre": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                },
+                "required": [
+                    "fichier_id"
+                ]
+            },
+            "PhotoProduit": {
+                "type": "object",
+                "properties": {
+                    "fichier_id": {
+                        "type": "string"
+                    },
+                    "ordre": {
+                        "type": "integer",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "fichier_id",
+                    "ordre"
+                ]
+            },
+            "PhotosOrdre": {
+                "type": "object",
+                "description": "PUT /produits/{id}/photos — nouvel ordre complet des photos.",
+                "properties": {
+                    "fichier_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "fichier_ids"
+                ]
+            },
+            "PhotosOrdreRequest": {
+                "type": "object",
+                "description": "PUT /produits/{id}/photos — nouvel ordre complet des photos.",
+                "properties": {
+                    "fichier_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                },
+                "required": [
+                    "fichier_ids"
+                ]
+            },
+            "Produit": {
+                "type": "object",
+                "description": "Vue propriétaire : tout le produit, stock réservé compris.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "categorie": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "unite": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "prix_unitaire_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "quantite_stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$"
+                    },
+                    "quantite_reservee": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$",
+                        "readOnly": true
+                    },
+                    "quantite_disponible": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$",
+                        "readOnly": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ProduitStatutEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "exploitation": {
+                        "type": "string"
+                    },
+                    "exploitation_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "photos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PhotoProduit"
+                        },
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "categorie",
+                    "cree_le",
+                    "exploitation",
+                    "exploitation_nom",
+                    "id",
+                    "maj_le",
+                    "nom",
+                    "photos",
+                    "prix_unitaire_fcfa",
+                    "quantite_disponible",
+                    "quantite_reservee",
+                    "statut",
+                    "unite"
+                ]
+            },
+            "ProduitCatalogue": {
+                "type": "object",
+                "description": "Vue publique : nom du producteur et région, jamais de téléphone ni de position.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "nom": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "categorie": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "unite": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "prix_unitaire_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "quantite_disponible": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$",
+                        "readOnly": true
+                    },
+                    "producteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "region": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "localite": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "photos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PhotoProduit"
+                        },
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "categorie",
+                    "cree_le",
+                    "id",
+                    "localite",
+                    "nom",
+                    "photos",
+                    "prix_unitaire_fcfa",
+                    "producteur_nom",
+                    "quantite_disponible",
+                    "region",
+                    "unite"
+                ]
+            },
+            "ProduitCreationRequest": {
+                "type": "object",
+                "description": "Vue propriétaire : tout le produit, stock réservé compris.",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "categorie": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "unite": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "prix_unitaire_fcfa": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "quantite_stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,9}(?:\\.\\d{0,3})?$"
+                    },
+                    "exploitation_id": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1
+                    },
+                    "photo_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "writeOnly": true
+                    }
+                },
+                "required": [
+                    "categorie",
+                    "exploitation_id",
+                    "nom",
+                    "prix_unitaire_fcfa",
+                    "unite"
+                ]
+            },
+            "ProduitStatutEnum": {
+                "enum": [
+                    "disponible",
+                    "epuise",
+                    "retire"
+                ],
+                "type": "string",
+                "description": "* `disponible` - Disponible\n* `epuise` - Épuisé\n* `retire` - Retiré"
             },
             "Referentiel": {
                 "type": "object",

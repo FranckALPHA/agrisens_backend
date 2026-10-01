@@ -140,6 +140,7 @@ INSTALLED_APPS = [
     "apps.notifications.apps.NotificationsConfig",
     "apps.profils.apps.ProfilsConfig",
     "apps.exploitations.apps.ExploitationsConfig",
+    "apps.produits.apps.ProduitsConfig",
 ]
 
 MIDDLEWARE = [

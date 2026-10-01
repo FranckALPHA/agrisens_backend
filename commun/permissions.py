@@ -83,6 +83,25 @@ class AutoriseEnAttente(BasePermission):
         raise _erreur_statut(user)
 
 
+class AnonymeOuActif(BasePermission):
+    """Ressource partiellement publique (photos du catalogue, F-05).
+
+    Laisse passer les requêtes anonymes : le vérificateur métier par contexte
+    tranche ensuite (404 silencieux si non visible). Un compte authentifié
+    doit être actif ou en attente ; un compte suspendu reçoit 403.
+    """
+
+    message = "Authentification requise."
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        user = _utilisateur_connecte(request)
+        if user is None:
+            return True
+        if getattr(user, "statut_compte", None) in ("actif", "en_attente_validation"):
+            return True
+        raise _erreur_statut(user)
+
+
 def ARole(*roles: str) -> type[BasePermission]:
     """Fabrique une classe de permission réservée aux rôles donnés.
 
