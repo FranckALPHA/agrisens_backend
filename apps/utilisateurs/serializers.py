@@ -11,6 +11,10 @@ from rest_framework import serializers
 from apps.utilisateurs.models import Adresse, Utilisateur
 from apps.utilisateurs.services import ROLES_INSCRIVABLES
 
+# Constante partagée avec le registre OpenAPI (ENUM_NAME_OVERRIDES) pour éviter
+# une collision de nom d'enum avec le champ `role` du modèle Utilisateur.
+CHOIX_ROLES_INSCRIPTION = sorted(ROLES_INSCRIVABLES)
+
 
 class InscriptionSerializer(serializers.Serializer):
     """POST /auth/inscription — rôles agriculteur, acheteur, ingénieur, livreur."""
@@ -19,7 +23,7 @@ class InscriptionSerializer(serializers.Serializer):
     telephone = serializers.CharField(max_length=20)
     email = serializers.EmailField(required=False, allow_blank=True, max_length=255)
     mot_de_passe = serializers.CharField(min_length=8, write_only=True)
-    role = serializers.ChoiceField(choices=sorted(ROLES_INSCRIVABLES))
+    role = serializers.ChoiceField(choices=CHOIX_ROLES_INSCRIPTION)
     region = serializers.CharField(max_length=100, required=False, allow_blank=True)
 
     def validate_mot_de_passe(self, valeur: str) -> str:

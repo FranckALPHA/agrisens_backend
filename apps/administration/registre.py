@@ -37,9 +37,13 @@ _DEFINITIONS = [
     DefinitionParametre("deplacement.distance_max_km", 100, 1, 500, True),
     DefinitionParametre("consultation.prix_min_fcfa", 2_000, 0, 100_000, True),
     DefinitionParametre("consultation.prix_max_fcfa", 50_000, 0, 500_000, True),
+    # Hypothèse Q-34 : borne de la zone d'intervention des ingénieurs (02 ne la fixe pas)
+    DefinitionParametre("consultation.zone_rayon_km_max", 150, 1, 500, True),
     DefinitionParametre("fichiers.image_max_mo", 5, 1, 20, True),
     DefinitionParametre("fichiers.document_max_mo", 10, 1, 50, True),
     DefinitionParametre("fichiers.photos_produit_max", 5, 1, 20, True),
+    # Hypothèse Q-35 : durée de vie des URL signées de téléchargement
+    DefinitionParametre("fichiers.duree_url_signee_s", 300, 30, 3_600, True),
     DefinitionParametre("ia.delai_max_s", 60, 10, 300, False),
     DefinitionParametre("paiement.verification_apres_min", 15, 5, 120, False),
 ]

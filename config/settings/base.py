@@ -136,6 +136,10 @@ INSTALLED_APPS = [
     "apps.utilisateurs.apps.UtilisateursConfig",
     "apps.administration.apps.AdministrationConfig",
     "apps.referentiels.apps.ReferentielsConfig",
+    "apps.fichiers.apps.FichiersConfig",
+    "apps.notifications.apps.NotificationsConfig",
+    "apps.profils.apps.ProfilsConfig",
+    "apps.exploitations.apps.ExploitationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -190,6 +194,8 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
+        # POST /fichiers (F-03) : uploads multipart
+        "rest_framework.parsers.MultiPartParser",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "apps.utilisateurs.authentification.AuthentificationJWT",
@@ -220,6 +226,16 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v1",
     "COMPONENT_SPLIT_REQUEST": True,
+    # Noms d'enum explicites : plusieurs champs `role` et `type` portent des
+    # jeux de choix distincts (modèle, inscription, création admin ; notif vs
+    # justificatif) — sans ceci, drf-spectacular génère des noms hachés.
+    "ENUM_NAME_OVERRIDES": {
+        "RoleUtilisateurEnum": "apps.utilisateurs.models.RoleUtilisateur",
+        "RoleInscriptionEnum": "apps.utilisateurs.serializers.CHOIX_ROLES_INSCRIPTION",
+        "RoleAdministrationEnum": "apps.administration.serializers_admin.CHOIX_ROLES_ADMIN",
+        "TypeNotificationEnum": "apps.notifications.models.TypeNotification",
+        "TypeJustificatifEnum": "apps.profils.models.TypeJustificatif",
+    },
 }
 
 # --- Journalisation structurée JSON ---

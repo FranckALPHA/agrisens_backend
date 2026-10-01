@@ -17,6 +17,7 @@ from shapely import wkb, wkt
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
+from commun.exceptions import ValidationMetier
 from commun.geo import (
     SRID,
     _echanger_axes,
@@ -143,8 +144,14 @@ class ChampGeoJSONSerializer(drf_serializers.Field):
             self.fail("invalid")
         if data.get("type") not in self.types_autorises:
             self.fail("type_invalide", types=", ".join(self.types_autorises))
+        # La validation métier (valide, non vide, emprise Cameroun) lève
+        # ValidationMetier : on la propage telle quelle pour conserver le
+        # code stable (ex. hors_emprise_cameroun) dans la réponse 422,
+        # au lieu de le noyer dans « validation_invalide ».
         try:
             valider_geojson(data)
+        except ValidationMetier:
+            raise
         except Exception as exc:
             self.fail("invalide", message=str(exc))
         return data
@@ -176,7 +183,14 @@ try:
                 "type": "object",
                 "properties": {
                     "type": {"type": "string"},
-                    "coordinates": {"type": "array", "items": {"type": "number"}},
+                    "coordinates": {
+                        "type": "array",
+                        "items": {},
+                        "description": (
+                            "Coordonnées GeoJSON (imbrication selon le type : "
+                            "Point, LineString ou Polygon)."
+                        ),
+                    },
                 },
                 "required": ["type", "coordinates"],
                 "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
