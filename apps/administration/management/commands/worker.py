@@ -32,7 +32,9 @@ class Command(BaseCommand):
         scheduler = BlockingScheduler(timezone="UTC")
 
         # Registre des tâches périodiques déclarées par les applications.
-        # Ex: scheduler.add_job(expirer_commandes, "interval", minutes=15)
+        from apps.commandes.taches import expirer_commandes
+
+        scheduler.add_job(expirer_commandes, "interval", minutes=5, id="expirer_commandes")
 
         def arret_propre(signum: int, frame: Any) -> None:
             self.stdout.write(self.style.WARNING("\nArrêt du worker reçu..."))

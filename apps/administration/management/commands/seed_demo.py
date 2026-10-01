@@ -20,6 +20,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management.base import BaseCommand
 from PIL import Image
 
+from apps.commandes.models import Commande
 from apps.exploitations.models import Exploitation
 from apps.exploitations.services import creer
 from apps.fichiers.models import ContexteFichier
@@ -189,6 +190,7 @@ class Command(BaseCommand):
         self._profils_demo()
         self._exploitation_demo()
         self._produits_demo()
+        self._commandes_demo()
 
     # --- Profils F-03 --------------------------------------------------------
 
@@ -369,6 +371,76 @@ class Command(BaseCommand):
                 photo_ids=photo_ids,
             )
         self.stdout.write("Produits de démonstration prêts (Tomates, Maïs, Gombo, Piment).")
+
+    # --- Commandes F-06 ----------------------------------------------------------
+
+    def _commandes_demo(self) -> None:
+        """Adresses d'Amina (6 km et > 50 km de Champ Nord) + une commande par
+        statut atteignable en F-06 (en_attente, acceptee, rejetee, annulee)."""
+        from apps.commandes.services import ServiceCommande
+        from apps.produits.models import Produit
+        from apps.utilisateurs.models import Adresse
+
+        paul = Utilisateur.objects.get(telephone="+237690000001")
+        amina = Utilisateur.objects.get(telephone="+237690000002")
+        champ = Exploitation.objects.filter(agriculteur=paul, nom="Champ Nord").first()
+        tomates = Produit.objects.filter(
+            exploitation=champ, nom="Tomates", statut="disponible"
+        ).first()
+        if champ is None or tomates is None:
+            self.stdout.write("Champ Nord ou Tomates manquants : commandes ignorées.")
+            return
+        centre = champ.centre
+        lon, lat = centre.x, centre.y
+
+        def adresse_demo(libelle: str, decalage_lat: float, ville: str) -> Adresse:
+            adresse, _ = Adresse.objects.update_or_create(
+                utilisateur=amina,
+                libelle=libelle,
+                defaults={
+                    "description": "Repères de démonstration",
+                    "position": {
+                        "type": "Point",
+                        "coordinates": [lon, lat + decalage_lat],
+                    },
+                    "ville": ville,
+                    "region": "centre",
+                },
+            )
+            return adresse
+
+        # ~5,5 km (facturés 6 km : 1 400 FCFA) et ~78 km (hors zone > 50 km).
+        proche = adresse_demo("Domicile", 0.050, "Yaoundé")
+        adresse_demo("Boutique", 0.700, "Nanga-Eboko")
+
+        existantes = Commande.objects.filter(acheteur=amina).count()
+        if existantes >= 4:
+            self.stdout.write("Commandes de démonstration déjà présentes.")
+            return
+        ServiceCommande.creer(
+            amina,
+            lignes=[{"produit_id": str(tomates.id), "quantite": "5"}],
+            adresse_id=str(proche.id),
+        )
+        acceptee = ServiceCommande.creer(
+            amina,
+            lignes=[{"produit_id": str(tomates.id), "quantite": "3"}],
+            adresse_id=str(proche.id),
+        )
+        ServiceCommande.accepter(paul, str(acceptee.id))
+        rejetee = ServiceCommande.creer(
+            amina,
+            lignes=[{"produit_id": str(tomates.id), "quantite": "2"}],
+            adresse_id=str(proche.id),
+        )
+        ServiceCommande.rejeter(paul, str(rejetee.id), "Stock déjà promis ailleurs.")
+        annulee = ServiceCommande.creer(
+            amina,
+            lignes=[{"produit_id": str(tomates.id), "quantite": "1"}],
+            adresse_id=str(proche.id),
+        )
+        ServiceCommande.annuler(amina, str(annulee.id))
+        self.stdout.write("Commandes de démonstration prêtes (4 statuts).")
 
     @staticmethod
     def _justificatifs(
