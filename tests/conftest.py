@@ -95,6 +95,37 @@ def client_authentifie(
     return _client
 
 
+@pytest.fixture(autouse=True)
+def _donnees_migration_garanties(request):
+    """Garantit référentiels + paramètres dans chaque test accédant à la base.
+
+    Les données de migration vivent dans la base partagée (--reuse-db) ;
+    un test TransactionTestCase (concurrence F-05) la vide en teardown.
+    Cette fixture réinsère ce qui manque (ORM seul, annulé en fin de test),
+    quel que soit l'ordre d'exécution des tests.
+    """
+    marqueur = request.node.get_closest_marker("django_db")
+    if marqueur is None and "db" not in getattr(request, "fixturenames", ()):
+        yield
+        return
+    transactionnel = bool(marqueur and marqueur.kwargs.get("transaction"))
+    request.getfixturevalue("transactional_db" if transactionnel else "db")
+    import importlib
+
+    from django.apps import apps as registre_apps
+
+    donnees_referentiels = importlib.import_module("apps.referentiels.migrations.0002_initial_data")
+    donnees_parametres = importlib.import_module("apps.administration.migrations.0002_initial_data")
+    from apps.administration.models import ParametrePlateforme
+    from apps.referentiels.models import Referentiel
+
+    if not Referentiel.objects.exists():
+        donnees_referentiels.inserer_referentiels(registre_apps, None)
+    if not ParametrePlateforme.objects.exists():
+        donnees_parametres.inserer_parametres(registre_apps, None)
+    yield
+
+
 @pytest.fixture
 def verifier_garde_route(client_authentifie: Callable[..., tuple[APIClient, Any]]):
     """Aide prompt F-02 point 7 : 401 sans jeton, 403 rôles interdits, succès autorisés.

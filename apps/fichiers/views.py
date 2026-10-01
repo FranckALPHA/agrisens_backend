@@ -4,7 +4,7 @@ Les vues valident, vérifient l'accès, appellent `ServiceFichiers` et
 répondent ; aucune règle métier ici.
 """
 
-from commun.permissions import AutoriseEnAttente
+from commun.permissions import AnonymeOuActif, AutoriseEnAttente
 from django.http import FileResponse, HttpResponseRedirect
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -48,8 +48,9 @@ class VueFichierDetail(APIView):
     """GET /fichiers/{id} — redirection vers une URL signée de courte durée."""
 
     # Compte actif ou en attente (le propriétaire d'un justificatif peut être
-    # en attente de validation) ; un compte suspendu est refusé ici (403).
-    permission_classes = [AutoriseEnAttente]
+    # en attente de validation), visiteur anonyme pour les photos publiques
+    # du catalogue ; un compte suspendu est refusé ici (403).
+    permission_classes = [AnonymeOuActif]
 
     @extend_schema(
         summary="Obtenir un fichier",

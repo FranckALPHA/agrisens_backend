@@ -26,6 +26,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("apps.notifications.urls")),
     path("", include("apps.profils.urls")),
     path("", include("apps.exploitations.urls")),
+    path("", include("apps.produits.urls")),
 ]
 
 # Routes réservées aux tests Playwright (uniquement local et test)

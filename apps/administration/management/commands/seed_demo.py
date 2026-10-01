@@ -24,6 +24,7 @@ from apps.exploitations.models import Exploitation
 from apps.exploitations.services import creer
 from apps.fichiers.models import ContexteFichier
 from apps.fichiers.services import service_fichiers
+from apps.produits.models import Produit
 from apps.profils.models import (
     IngenieurProfil,
     LivreurProfil,
@@ -187,6 +188,7 @@ class Command(BaseCommand):
         )
         self._profils_demo()
         self._exploitation_demo()
+        self._produits_demo()
 
     # --- Profils F-03 --------------------------------------------------------
 
@@ -292,6 +294,81 @@ class Command(BaseCommand):
                 localite="Yaoundé",
             )
         self.stdout.write("Exploitation de démonstration prête (Champ Nord).")
+
+    # --- Produits F-05 ---------------------------------------------------------
+
+    def _produits_demo(self) -> None:
+        """100 kg de tomates à 500 FCFA/kg avec photo, autres produits, un épuisé."""
+        from apps.produits.services import ServiceProduit
+
+        paul = Utilisateur.objects.get(telephone="+237690000001")
+        champ = Exploitation.objects.filter(agriculteur=paul, nom="Champ Nord").first()
+        if champ is None:
+            self.stdout.write("Pas de Champ Nord : produits de démonstration ignorés.")
+            return
+        catalogue = [
+            {
+                "nom": "Tomates",
+                "categorie": "legumes",
+                "unite": "kg",
+                "prix_unitaire_fcfa": 500,
+                "quantite_stock": "100",
+                "description": "Tomates fraîches du Champ Nord.",
+                "photo": True,
+            },
+            {
+                "nom": "Maïs",
+                "categorie": "cereales",
+                "unite": "kg",
+                "prix_unitaire_fcfa": 350,
+                "quantite_stock": "200",
+                "description": "Maïs grain.",
+                "photo": False,
+            },
+            {
+                "nom": "Gombo",
+                "categorie": "legumes",
+                "unite": "kg",
+                "prix_unitaire_fcfa": 700,
+                "quantite_stock": "30",
+                "description": "Gombo frais.",
+                "photo": False,
+            },
+            {
+                "nom": "Piment",
+                "categorie": "legumes",
+                "unite": "kg",
+                "prix_unitaire_fcfa": 1200,
+                "quantite_stock": "0",
+                "description": "Piment fort, de retour bientôt.",
+                "photo": False,
+            },
+        ]
+        for fiche in catalogue:
+            if Produit.objects.filter(exploitation=champ, nom=fiche["nom"]).exists():
+                continue
+            photo_ids: list[str] = []
+            if fiche["photo"]:
+                fichier = service_fichiers.televerser(
+                    proprietaire=paul,
+                    contexte=ContexteFichier.PRODUIT,
+                    fichier=SimpleUploadedFile(
+                        "tomates.jpg", _octets_jpeg(), content_type="image/jpeg"
+                    ),
+                )
+                photo_ids.append(fichier.id)
+            ServiceProduit.creer(
+                paul,
+                exploitation_id=str(champ.id),
+                nom=str(fiche["nom"]),
+                categorie=str(fiche["categorie"]),
+                unite=str(fiche["unite"]),
+                prix_unitaire_fcfa=int(str(fiche["prix_unitaire_fcfa"])),
+                quantite_stock=str(fiche["quantite_stock"]),
+                description=str(fiche["description"]),
+                photo_ids=photo_ids,
+            )
+        self.stdout.write("Produits de démonstration prêts (Tomates, Maïs, Gombo, Piment).")
 
     @staticmethod
     def _justificatifs(
