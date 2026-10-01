@@ -189,9 +189,9 @@ class ServiceProfilIngenieur:
     def _fichier_photo(utilisateur: Utilisateur, fichier_id: Any) -> Fichier | None:
         if fichier_id is None:
             return None
-        fichier = Fichier.objects.filter(
-            id=fichier_id, proprietaire_id=utilisateur.id, contexte=ContexteFichier.ACCOMPAGNEMENT
-        ).first()
+        # Tout fichier image du propriétaire convient (téléversé pour le
+        # profil, un produit ou un justificatif) ; aucun contexte imposé.
+        fichier = Fichier.objects.filter(id=fichier_id, proprietaire_id=utilisateur.id).first()
         # Un fichier qui n'appartient pas à l'appelant est « introuvable » (404).
         if fichier is None:
             raise NonTrouve(
@@ -218,6 +218,8 @@ class ServiceProfilIngenieur:
             manquants.append("zone_rayon_km")
         if profil.tarif_consultation_fcfa is None:
             manquants.append("tarif_consultation_fcfa")
+        if not profil.justificatifs.exists():
+            manquants.append("justificatifs")
         if profil.statut_validation != StatutValidation.VALIDE:
             manquants.append("validation_admin")
         if manquants:
