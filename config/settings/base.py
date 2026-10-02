@@ -6,6 +6,7 @@ Conventions techniques §1, §4, §5, §6 et prompt F-00 point 3.
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -58,6 +59,8 @@ CORS_ALLOWED_ORIGINS: list[str] = env.list(
         "http://127.0.0.1:4173",
     ],
 )
+# En-têtes non simples autorisés en préflight (F-07 : idempotence navigateur).
+CORS_ALLOW_HEADERS = [*default_headers, "Idempotency-Key"]
 FRONTEND_URL = env.str("FRONTEND_URL", default="http://localhost:5173")
 API_URL_PUBLIQUE = env.str("API_URL_PUBLIQUE", default="http://localhost:8000")
 
@@ -106,7 +109,9 @@ NOTCHPAY_MODE = env.str("NOTCHPAY_MODE", default="factice")
 NOTCHPAY_CLE_PUBLIQUE = env.str("NOTCHPAY_CLE_PUBLIQUE")
 NOTCHPAY_CLE_PRIVEE = env.str("NOTCHPAY_CLE_PRIVEE")
 NOTCHPAY_SECRET_WEBHOOK = env.str("NOTCHPAY_SECRET_WEBHOOK")
-NOTCHPAY_URL_BASE = env.str("NOTCHPAY_URL_BASE", default="https://sandbox.notchpay.co")
+# Base vérifiée : https://api.notchpay.co en test comme en production, le
+# mode étant déterminé par les clés (sandbox.notchpay.co n'existe pas).
+NOTCHPAY_URL_BASE = env.str("NOTCHPAY_URL_BASE", default="https://api.notchpay.co")
 
 # IA Groq
 IA_FOURNISSEUR = env.str("IA_FOURNISSEUR", default="factice")
@@ -142,6 +147,7 @@ INSTALLED_APPS = [
     "apps.exploitations.apps.ExploitationsConfig",
     "apps.produits.apps.ProduitsConfig",
     "apps.commandes.apps.CommandesConfig",
+    "apps.paiements.apps.PaiementsConfig",
 ]
 
 MIDDLEWARE = [

@@ -28,13 +28,17 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("apps.exploitations.urls")),
     path("", include("apps.produits.urls")),
     path("", include("apps.commandes.urls")),
+    path("", include("apps.paiements.urls")),
 ]
 
 # Routes réservées aux tests Playwright (uniquement local et test)
 if getattr(settings, "ENVIRONNEMENT", "local") in ("local", "test"):
+    from apps.paiements.simulateur import urlpatterns_simulateur
+
     api_v1_patterns += [
         path("dev/horloge", VueDevHorloge.as_view(), name="dev_horloge"),
         path("dev/taches/<str:nom>", VueDevDeclencherTache.as_view(), name="dev_tache"),
+        *urlpatterns_simulateur,
     ]
 
 urlpatterns = [

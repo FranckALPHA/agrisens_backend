@@ -839,6 +839,69 @@
                 }
             }
         },
+        "/api/v1/commandes/{identifiant}/paiements/": {
+            "post": {
+                "operationId": "commandes_paiements_create",
+                "description": "En-tête `Idempotency-Key` : la même clé renvoie le même paiement sans nouvel effet (double clic sans doublon).",
+                "summary": "Initier le paiement d'une commande acceptée",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InitierPaiementRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InitierPaiementRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Paiement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Paiement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/commandes/{identifiant}/preparer/": {
             "post": {
                 "operationId": "commandes_preparer_create",
@@ -1885,6 +1948,46 @@
                 }
             }
         },
+        "/api/v1/paiements/{identifiant}/": {
+            "get": {
+                "operationId": "paiements_retrieve",
+                "summary": "Consulter un paiement",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "paiements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Paiement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Paiement introuvable"
+                    }
+                }
+            }
+        },
         "/api/v1/parametres/publics/": {
             "get": {
                 "operationId": "parametres_publics_retrieve",
@@ -2786,6 +2889,36 @@
                     }
                 }
             }
+        },
+        "/api/v1/webhooks/notchpay/": {
+            "post": {
+                "operationId": "webhooks_notchpay_create",
+                "description": "Signature invalide → 401. Événement déjà reçu → 200 sans effet. Seul ce point d'entrée fait passer un paiement à `reussi`.",
+                "summary": "Webhook NotchPay (confirmation des paiements)",
+                "tags": [
+                    "webhooks"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Événement traité, rejoué, ignoré ou en erreur"
+                    },
+                    "400": {
+                        "description": "Webhook illisible ou incomplet"
+                    },
+                    "401": {
+                        "description": "Signature invalide"
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -2984,6 +3117,16 @@
                         "maximum": 2147483647,
                         "minimum": -2147483648
                     },
+                    "commission_taux_pb": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "commission_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true
+                    },
                     "parametres_appliques": {},
                     "expire_le": {
                         "type": "string",
@@ -3017,6 +3160,8 @@
                     "adresse_exacte_visible",
                     "adresse_livraison",
                     "agriculteur_nom",
+                    "commission_fcfa",
+                    "commission_taux_pb",
                     "cree_le",
                     "distance_km",
                     "frais_livraison_fcfa",
@@ -3784,6 +3929,21 @@
                     "zone_centre"
                 ]
             },
+            "InitierPaiementRequest": {
+                "type": "object",
+                "description": "POST /commandes/{id}/paiements — opérateur + numéro Mobile Money.",
+                "properties": {
+                    "operateur": {
+                        "$ref": "#/components/schemas/OperateurEnum"
+                    },
+                    "telephone": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "operateur"
+                ]
+            },
             "InscriptionRequest": {
                 "type": "object",
                 "description": "POST /auth/inscription — rôles agriculteur, acheteur, ingénieur, livreur.",
@@ -4312,6 +4472,133 @@
                     "titre",
                     "type"
                 ]
+            },
+            "NullEnum": {
+                "enum": [
+                    null
+                ]
+            },
+            "ObjetEnum": {
+                "enum": [
+                    "commande",
+                    "abonnement",
+                    "accompagnement"
+                ],
+                "type": "string",
+                "description": "* `commande` - Commande\n* `abonnement` - Abonnement\n* `accompagnement` - Accompagnement"
+            },
+            "OperateurEnum": {
+                "enum": [
+                    "mtn_momo",
+                    "orange_money"
+                ],
+                "type": "string",
+                "description": "* `mtn_momo` - MTN Mobile Money\n* `orange_money` - Orange Money"
+            },
+            "Paiement": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "objet": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ObjetEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "commande": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "commande_reference": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "commande_statut": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "montant_fcfa": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "operateur": {
+                        "readOnly": true,
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/OperateurEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "reference_interne": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "reference_notchpay": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PaiementStatutEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "url_paiement": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "confirme_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "commande",
+                    "commande_reference",
+                    "commande_statut",
+                    "confirme_le",
+                    "cree_le",
+                    "id",
+                    "montant_fcfa",
+                    "objet",
+                    "operateur",
+                    "reference_interne",
+                    "reference_notchpay",
+                    "statut",
+                    "url_paiement"
+                ]
+            },
+            "PaiementStatutEnum": {
+                "enum": [
+                    "initie",
+                    "en_attente",
+                    "reussi",
+                    "echoue",
+                    "expire"
+                ],
+                "type": "string",
+                "description": "* `initie` - Initié\n* `en_attente` - En attente\n* `reussi` - Réussi\n* `echoue` - Échoué\n* `expire` - Expiré"
             },
             "PatchedAdresseModificationRequest": {
                 "type": "object",
