@@ -685,6 +685,47 @@
                 }
             }
         },
+        "/api/v1/commandes/{commande_id}/livraison/": {
+            "get": {
+                "operationId": "commandes_livraison_retrieve",
+                "description": "GET /commandes/{id}/livraison — livraison liée (parties + admin).",
+                "summary": "Consulter la livraison d'une commande",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "commande_id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivraisonDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Aucune livraison"
+                    }
+                }
+            }
+        },
         "/api/v1/commandes/{identifiant}/": {
             "get": {
                 "operationId": "commandes_retrieve",
@@ -795,6 +836,36 @@
                             }
                         },
                         "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/code-remise/": {
+            "get": {
+                "operationId": "commandes_code_remise_retrieve",
+                "summary": "Lire son code de remise (acheteur uniquement)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Code à 6 chiffres"
                     }
                 }
             }
@@ -1743,6 +1814,469 @@
                     },
                     "422": {
                         "description": "validation_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/": {
+            "get": {
+                "operationId": "livraisons_retrieve",
+                "summary": "Consulter une livraison (données selon rôle et étape)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivraisonDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Livraison introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/accepter/": {
+            "post": {
+                "operationId": "livraisons_accepter_create",
+                "summary": "Accepter une livraison (un seul gagnant, sinon 409)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivraisonDisponible"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/confirmer-remise/": {
+            "post": {
+                "operationId": "livraisons_confirmer_remise_create",
+                "summary": "Confirmer la remise par le code (bloqué après 5 échecs)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CodeRemiseRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CodeRemiseRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivraisonDisponible"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/demarrer/": {
+            "post": {
+                "operationId": "livraisons_demarrer_create",
+                "summary": "Démarrer la course (produit récupéré, stock consommé)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivraisonDisponible"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/desister/": {
+            "post": {
+                "operationId": "livraisons_desister_create",
+                "summary": "Se désister (retour à proposée)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LivraisonDisponible"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/historique/": {
+            "get": {
+                "operationId": "livraisons_historique_retrieve",
+                "summary": "Historique des statuts d'une livraison",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historique"
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/incidents/": {
+            "post": {
+                "operationId": "livraisons_incidents_create",
+                "summary": "Déclarer un incident (photo possible)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IncidentCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IncidentCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Incident"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/itineraire/": {
+            "get": {
+                "operationId": "livraisons_itineraire_retrieve",
+                "summary": "Itinéraire GeoJSON de la livraison",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Itinéraire GeoJSON"
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/position/": {
+            "post": {
+                "operationId": "livraisons_position_create",
+                "description": "POST /livraisons/{id}/position — le livreur publie sa position en course.",
+                "summary": "Mettre à jour sa position pendant la course",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PositionLivreurRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PositionLivreurRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Position enregistrée"
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/{identifiant}/reprogrammer/": {
+            "post": {
+                "operationId": "livraisons_reprogrammer_create",
+                "summary": "Reprogrammer après incident (avec paiement si client absent)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "livraisons"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReprogrammerRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReprogrammerRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reprogrammée ou paiement initié"
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/disponibles/": {
+            "get": {
+                "operationId": "livraisons_disponibles_list",
+                "summary": "Livraisons proposées, triées par distance (sans adresse exacte)",
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LivraisonDisponible"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/livraisons/mes-livraisons/": {
+            "get": {
+                "operationId": "livraisons_mes_livraisons_list",
+                "summary": "Mes livraisons acceptées et en cours",
+                "tags": [
+                    "livraisons"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LivraisonDisponible"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
                     }
                 }
             }
@@ -3063,6 +3597,21 @@
                     "total"
                 ]
             },
+            "CodeRemiseRequest": {
+                "type": "object",
+                "description": "Saisie du code par le livreur : exactement 6 chiffres.",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 6,
+                        "maxLength": 6,
+                        "pattern": "^[0-9]{6}$"
+                    }
+                },
+                "required": [
+                    "code"
+                ]
+            },
             "CommandeDetail": {
                 "type": "object",
                 "properties": {
@@ -3691,6 +4240,55 @@
                     "type_mime"
                 ]
             },
+            "Incident": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/TypeIncidentEnum"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "fichier": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "id",
+                    "type"
+                ]
+            },
+            "IncidentCreationRequest": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/TypeIncidentEnum"
+                    },
+                    "description": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "fichier_id": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
             "IngenieurProfil": {
                 "type": "object",
                 "description": "GET/PUT /ingenieurs/moi/profil — vue complète pour l'ingénieur lui-même.",
@@ -3934,7 +4532,7 @@
                 "description": "POST /commandes/{id}/paiements — opérateur + numéro Mobile Money.",
                 "properties": {
                     "operateur": {
-                        "$ref": "#/components/schemas/OperateurEnum"
+                        "$ref": "#/components/schemas/OperateurPaiementEnum"
                     },
                     "telephone": {
                         "type": "string"
@@ -3989,6 +4587,33 @@
                     "nom",
                     "role",
                     "telephone"
+                ]
+            },
+            "Itineraire": {
+                "type": "object",
+                "description": "Itinéraire : points GeoJSON + distance + durée (champs maison).",
+                "properties": {
+                    "point_depart": {},
+                    "point_arrivee": {},
+                    "distance_km": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$"
+                    },
+                    "duree_estimee_min": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "source": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "distance_km",
+                    "duree_estimee_min",
+                    "point_arrivee",
+                    "point_depart",
+                    "source"
                 ]
             },
             "Justificatif": {
@@ -4284,6 +4909,171 @@
                     "total"
                 ]
             },
+            "LivraisonDetail": {
+                "type": "object",
+                "description": "Vue détaillée : itinéraire + données sensibles déjà filtrées en amont.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "commande_reference": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "statut": {
+                        "$ref": "#/components/schemas/StatutLivraisonEnum"
+                    },
+                    "numero_tentative": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "frais_livraison_fcfa": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "zone_livraison": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "distance_km": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "duree_estimee_min": {
+                        "type": "integer",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "acceptee_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "itineraire": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Itineraire"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "livreur_nom": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "adresse_exacte": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "adresse_exacte_visible": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "telephone_acheteur": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "telephone_livreur": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "position_livreur": {
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "tentatives_code_echouees": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "demarree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "livree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "adresse_exacte",
+                    "adresse_exacte_visible",
+                    "commande_reference",
+                    "distance_km",
+                    "duree_estimee_min",
+                    "frais_livraison_fcfa",
+                    "id",
+                    "itineraire",
+                    "livreur_nom",
+                    "position_livreur",
+                    "telephone_acheteur",
+                    "telephone_livreur",
+                    "zone_livraison"
+                ]
+            },
+            "LivraisonDisponible": {
+                "type": "object",
+                "description": "Vue livreur avant acceptation : zone et distance, jamais d'adresse\nexacte ni de téléphone (D-21).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "commande_reference": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "statut": {
+                        "$ref": "#/components/schemas/StatutLivraisonEnum"
+                    },
+                    "numero_tentative": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "frais_livraison_fcfa": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "zone_livraison": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "distance_km": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "duree_estimee_min": {
+                        "type": "integer",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "acceptee_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "commande_reference",
+                    "distance_km",
+                    "duree_estimee_min",
+                    "frais_livraison_fcfa",
+                    "id",
+                    "zone_livraison"
+                ]
+            },
             "LivreurProfil": {
                 "type": "object",
                 "description": "GET /livreurs/moi/disponibilite — état courant du profil livreur.",
@@ -4487,7 +5277,7 @@
                 "type": "string",
                 "description": "* `commande` - Commande\n* `abonnement` - Abonnement\n* `accompagnement` - Accompagnement"
             },
-            "OperateurEnum": {
+            "OperateurPaiementEnum": {
                 "enum": [
                     "mtn_momo",
                     "orange_money"
@@ -4532,7 +5322,7 @@
                         "nullable": true,
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/OperateurEnum"
+                                "$ref": "#/components/schemas/OperateurPaiementEnum"
                             },
                             {
                                 "$ref": "#/components/schemas/NullEnum"
@@ -4846,6 +5636,33 @@
                 },
                 "required": [
                     "fichier_ids"
+                ]
+            },
+            "PositionLivreurRequest": {
+                "type": "object",
+                "description": "POST /livraisons/{id}/position — GeoJSON Point pendant la course.",
+                "properties": {
+                    "position": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude)."
+                    }
+                },
+                "required": [
+                    "position"
                 ]
             },
             "Produit": {
@@ -5182,6 +5999,40 @@
                     "tache"
                 ]
             },
+            "ReprogrammerOperateurEnum": {
+                "enum": [
+                    "mtn_momo",
+                    "orange_money"
+                ],
+                "type": "string",
+                "description": "* `mtn_momo` - MTN\n* `orange_money` - Orange"
+            },
+            "ReprogrammerRequest": {
+                "type": "object",
+                "description": "Reprogrammation : nouvelle adresse optionnelle + paiement si frais dus.",
+                "properties": {
+                    "adresse_id": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 1
+                    },
+                    "operateur": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ReprogrammerOperateurEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "default": ""
+                    }
+                }
+            },
             "RoleAdministrationEnum": {
                 "enum": [
                     "admin",
@@ -5295,6 +6146,19 @@
                 "type": "string",
                 "description": "* `actif` - Actif\n* `en_attente_validation` - En attente de validation\n* `suspendu` - Suspendu\n* `anonymise` - Anonymisé"
             },
+            "StatutLivraisonEnum": {
+                "enum": [
+                    "proposee",
+                    "acceptee",
+                    "en_cours",
+                    "livree",
+                    "client_absent",
+                    "echec_livraison",
+                    "annulee"
+                ],
+                "type": "string",
+                "description": "* `proposee` - Proposée\n* `acceptee` - Acceptée\n* `en_cours` - En cours\n* `livree` - Livrée\n* `client_absent` - Client absent\n* `echec_livraison` - Échec de livraison\n* `annulee` - Annulée"
+            },
             "StatutValidationEnum": {
                 "enum": [
                     "en_attente",
@@ -5334,6 +6198,16 @@
                     "contexte",
                     "fichier"
                 ]
+            },
+            "TypeIncidentEnum": {
+                "enum": [
+                    "client_absent",
+                    "echec_livraison",
+                    "produit_endommage",
+                    "autre"
+                ],
+                "type": "string",
+                "description": "* `client_absent` - Client absent\n* `echec_livraison` - Échec de livraison\n* `produit_endommage` - Produit endommagé\n* `autre` - Autre"
             },
             "TypeJustificatifEnum": {
                 "enum": [

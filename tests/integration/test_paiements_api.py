@@ -12,7 +12,7 @@ from apps.paiements.evenements import PaiementReussi
 from apps.paiements.models import EvenementWebhook, Paiement, StatutPaiement
 from apps.paiements.passerelle import EN_TETE_SIGNATURE, PasserelleFactice, signer_webhook
 from apps.paiements.taches import verifier_paiements
-from commun.evenements import abonner, desabonner, vider
+from commun.evenements import abonner, desabonner
 from commun.horloge import maintenant
 from rest_framework.test import APIClient
 
@@ -178,7 +178,6 @@ def test_webhook_reussi_paie_fige_commission_notifie_publie(
         assert reponse.status_code == 200, reponse.data
     finally:
         desabonner(PaiementReussi, recus.append)
-        vider()
 
     paiement = Paiement.objects.get(reference_interne=reference)
     assert paiement.statut == StatutPaiement.REUSSI

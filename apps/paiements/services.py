@@ -175,6 +175,70 @@ class ServicePaiement:
         ServiceCommande.passer_en_paiement(str(commande.id))
         return paiement, resultat["url_paiement"], False
 
+    @staticmethod
+    @transaction.atomic
+    def initier_reprogrammation(
+        commande: Commande,
+        montant_fcfa: int,
+        operateur: str | None,
+        telephone: str | None,
+        cle_idempotence: str | None,
+        url_base_pwa: str = "",
+    ) -> tuple[Paiement, str, bool]:
+        """Crée le paiement des nouveaux frais (client absent, Q-04).
+
+        Sans transition de commande : la re-proposition a lieu au webhook
+        de succès (`finaliser_reprogrammation_payee`).
+        """
+        if operateur not in OPERATEURS_VALIDES:
+            raise ValidationMetier(
+                "operateur_inconnu",
+                "Opérateur inconnu (mtn_momo, orange_money).",
+                {"operateur": operateur},
+            )
+        numero = None
+        if telephone:
+            try:
+                numero = normaliser_telephone(telephone)
+            except ValidationMetier:
+                raise ValidationMetier(
+                    "telephone_invalide",
+                    "Numéro de téléphone invalide (format E.164, ex. +2376XXXXXXXX).",
+                ) from None
+        if cle_idempotence:
+            existant = Paiement.objects.filter(cle_idempotence=cle_idempotence).first()
+            if existant is not None:
+                if existant.commande_id != commande.id or existant.montant_fcfa != montant_fcfa:
+                    raise Conflit(
+                        code="cle_idempotence_differente",
+                        message="Clé d'idempotence déjà utilisée pour un autre paiement.",
+                    )
+                return existant, existant.url_paiement or "", True
+        paiement = Paiement.objects.create(
+            objet=ObjetPaiement.COMMANDE,
+            commande=commande,
+            payeur=commande.acheteur,
+            montant_fcfa=montant_fcfa,
+            operateur=operateur,
+            reference_interne=_nouvelle_reference_interne(),
+            cle_idempotence=cle_idempotence or secrets.token_urlsafe(24),
+            statut=StatutPaiement.INITIE,
+        )
+        resultat = passerelle_paiement().initialiser(
+            montant_fcfa=montant_fcfa,
+            reference_interne=paiement.reference_interne,
+            description=f"Nouveaux frais de livraison {commande.reference} — AgriSens",
+            retour_url=f"{url_base_pwa}/paiements/retour?reference={paiement.reference_interne}",
+            telephone=numero,
+            email=getattr(commande.acheteur, "email", None),
+            nom_client=getattr(commande.acheteur, "nom", None),
+        )
+        paiement.reference_notchpay = resultat["reference_externe"]
+        paiement.url_paiement = resultat["url_paiement"]
+        paiement.statut = StatutPaiement.EN_ATTENTE
+        paiement.save()
+        return paiement, resultat["url_paiement"], False
+
     # --- Consultation ------------------------------------------------------
 
     @staticmethod
@@ -349,7 +413,28 @@ class ServicePaiement:
             StatutCommande.PAIEMENT_EN_ATTENTE,
         ):
             taux, commission = _commission_figee(commande)
-            ServiceCommande.noter_paiement(str(commande.id), taux, commission)
+            try:
+                ServiceCommande.noter_paiement(str(commande.id), taux, commission)
+            except TransitionInvalide:
+                # Course entre deux webhooks : la commande a déjà avancé.
+                note = "commande_deja_avancee"
+            else:
+                publier(
+                    PaiementReussi(
+                        paiement_id=str(paiement.id),
+                        commande_id=str(commande.id),
+                        montant_fcfa=paiement.montant_fcfa,
+                    )
+                )
+        elif commande is not None and commande.statut in (
+            StatutCommande.CLIENT_ABSENT,
+            StatutCommande.ECHEC_LIVRAISON,
+        ):
+            # Paiement des nouveaux frais (Q-04) : re-propose la livraison.
+            from apps.livraisons.services import ServiceLivraison
+
+            if ServiceLivraison.finaliser_reprogrammation_payee(str(commande.id)) is None:
+                note = "reprogrammation_deja_traitee"
             publier(
                 PaiementReussi(
                     paiement_id=str(paiement.id),

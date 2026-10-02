@@ -29,6 +29,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("apps.produits.urls")),
     path("", include("apps.commandes.urls")),
     path("", include("apps.paiements.urls")),
+    path("", include("apps.livraisons.urls")),
 ]
 
 # Routes réservées aux tests Playwright (uniquement local et test)
