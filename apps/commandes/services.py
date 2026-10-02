@@ -469,6 +469,79 @@ class ServiceCommande:
         )
         return commande
 
+    # --- Paiement (F-07 : appelées par `apps/paiements/services.py`) ---------
+
+    @staticmethod
+    @transaction.atomic
+    def passer_en_paiement(commande_id: str) -> Commande:
+        """`acceptee → paiement_en_attente` à l'initialisation du paiement."""
+        commande = Commande.objects.select_for_update().filter(id=commande_id).first()
+        if commande is None:
+            raise NonTrouve()
+        _transition(
+            commande,
+            StatutCommande.PAIEMENT_EN_ATTENTE,
+            (StatutCommande.ACCEPTEE,),
+            commande.acheteur,
+            "Paiement initié par l'acheteur.",
+        )
+        return commande
+
+    @staticmethod
+    @transaction.atomic
+    def noter_paiement(commande_id: str, taux_pb: int, commission_fcfa: int) -> Commande:
+        """Webhook réussi : `payee`, commission figée, notifications."""
+        commande = Commande.objects.select_for_update().filter(id=commande_id).first()
+        if commande is None:
+            raise NonTrouve()
+        _transition(
+            commande,
+            StatutCommande.PAYEE,
+            (StatutCommande.ACCEPTEE, StatutCommande.PAIEMENT_EN_ATTENTE),
+            None,
+            "Paiement confirmé par webhook.",
+        )
+        commande.commission_taux_pb = taux_pb
+        commande.commission_fcfa = commission_fcfa
+        commande.expire_le = None
+        commande.save()
+        notifier(
+            commande.acheteur,
+            "commande",
+            f"Commande {commande.reference} payée",
+            "Paiement confirmé. L'agriculteur prépare vos produits.",
+            lien=f"/commandes/{commande.id}",
+        )
+        notifier(
+            commande.agriculteur,
+            "commande",
+            f"Commande {commande.reference} payée",
+            "Vous pouvez préparer la commande.",
+            lien=f"/agriculteur/commandes/{commande.id}",
+        )
+        return commande
+
+    @staticmethod
+    @transaction.atomic
+    def revenir_acceptee(commande_id: str, motif: str) -> Commande | None:
+        """Webhook échoué/expiré : retour à `acceptee` si le paiement était en cours."""
+        commande = Commande.objects.select_for_update().filter(id=commande_id).first()
+        if commande is None:
+            raise NonTrouve()
+        if commande.statut != StatutCommande.PAIEMENT_EN_ATTENTE:
+            return None
+        _transition(
+            commande, StatutCommande.ACCEPTEE, (StatutCommande.PAIEMENT_EN_ATTENTE,), None, motif
+        )
+        notifier(
+            commande.acheteur,
+            "commande",
+            f"Paiement non abouti ({commande.reference})",
+            f"{motif} Nouvel essai possible.",
+            lien=f"/commandes/{commande.id}",
+        )
+        return commande
+
     @staticmethod
     @transaction.atomic
     def expirer(commande: Commande, acteur: Any = None) -> Commande:

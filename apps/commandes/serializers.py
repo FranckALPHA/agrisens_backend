@@ -92,6 +92,8 @@ class CommandeDetailSerializer(serializers.ModelSerializer):
     acheteur_nom = serializers.CharField(source="acheteur.nom", read_only=True)
     adresse_livraison = serializers.SerializerMethodField()
     adresse_exacte_visible = serializers.SerializerMethodField()
+    commission_taux_pb = serializers.IntegerField(read_only=True, allow_null=True)
+    commission_fcfa = serializers.IntegerField(read_only=True, allow_null=True)
 
     @extend_schema_field(serializers.CharField())
     def get_adresse_livraison(self, obj: Commande) -> str:
@@ -121,6 +123,8 @@ class CommandeDetailSerializer(serializers.ModelSerializer):
             "sous_total_fcfa",
             "frais_livraison_fcfa",
             "total_fcfa",
+            "commission_taux_pb",
+            "commission_fcfa",
             "parametres_appliques",
             "expire_le",
             "motif_rejet",

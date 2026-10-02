@@ -33,8 +33,10 @@ class Command(BaseCommand):
 
         # Registre des tâches périodiques déclarées par les applications.
         from apps.commandes.taches import expirer_commandes
+        from apps.paiements.taches import verifier_paiements
 
         scheduler.add_job(expirer_commandes, "interval", minutes=5, id="expirer_commandes")
+        scheduler.add_job(verifier_paiements, "interval", minutes=5, id="verifier_paiements")
 
         def arret_propre(signum: int, frame: Any) -> None:
             self.stdout.write(self.style.WARNING("\nArrêt du worker reçu..."))
