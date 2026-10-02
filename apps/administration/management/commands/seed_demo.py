@@ -191,6 +191,7 @@ class Command(BaseCommand):
         self._exploitation_demo()
         self._produits_demo()
         self._commandes_demo()
+        self._livraisons_demo()
 
     # --- Profils F-03 --------------------------------------------------------
 
@@ -441,6 +442,93 @@ class Command(BaseCommand):
         )
         ServiceCommande.annuler(amina, str(annulee.id))
         self.stdout.write("Commandes de démonstration prêtes (4 statuts).")
+
+    # --- Livraisons F-08 ---------------------------------------------------------
+
+    def _livraisons_demo(self) -> None:
+        """Une livraison proposée, une en cours, une livrée (vrais appels)."""
+        from apps.commandes.services import ServiceCommande
+        from apps.livraisons.models import Livraison
+        from apps.livraisons.services import ServiceLivraison, dechiffrer_code
+        from apps.paiements.services import ServicePaiement
+        from apps.produits.models import Produit
+        from apps.profils.models import LivreurProfil
+
+        if Livraison.objects.count() >= 3:
+            self.stdout.write("Livraisons de démonstration déjà présentes.")
+            return
+        paul = Utilisateur.objects.get(telephone="+237690000001")
+        amina = Utilisateur.objects.get(telephone="+237690000002")
+        alain = Utilisateur.objects.get(telephone="+237690000007")
+        adresse = amina.adresses.filter(libelle="Domicile").first() or amina.adresses.first()
+        tomates = Produit.objects.filter(nom="Tomates", statut="disponible").first()
+        if adresse is None or tomates is None:
+            self.stdout.write("Adresse ou Tomates manquantes : livraisons ignorées.")
+            return
+        LivreurProfil.objects.update_or_create(
+            utilisateur=alain,
+            defaults={
+                "disponible": True,
+                "position": {"type": "Point", "coordinates": [11.5137, 3.848]},
+                "position_maj_le": maintenant(),
+                "zone": "centre",
+            },
+        )
+
+        def commander_et_payer(quantite: str) -> Commande:
+            commande = ServiceCommande.creer(
+                amina,
+                lignes=[{"produit_id": str(tomates.id), "quantite": quantite}],
+                adresse_id=str(adresse.id),
+            )
+            ServiceCommande.accepter(paul, str(commande.id))
+            paiement, _, _ = ServicePaiement.initier_paiement_commande(
+                amina,
+                str(commande.id),
+                "mtn_momo",
+                None,
+                f"seed-{commande.reference}",
+                "http://localhost:5173",
+            )
+            # Webhook réussi via le vrai point d'entrée (signature valide).
+            import json as _json
+
+            from apps.paiements.passerelle import EN_TETE_SIGNATURE, signer_webhook
+
+            corps = _json.dumps(
+                {
+                    "id": f"evt-seed-{paiement.reference_interne}",
+                    "type": "payment.complete",
+                    "data": {
+                        "reference": paiement.reference_notchpay,
+                        "merchant_reference": paiement.reference_interne,
+                        "amount": paiement.montant_fcfa,
+                    },
+                }
+            ).encode()
+            statut, _ = ServicePaiement.traiter_webhook(
+                {EN_TETE_SIGNATURE: signer_webhook(corps)}, corps
+            )
+            assert statut == 200
+            return Commande.objects.get(id=commande.id)
+
+        # 1. Proposée (en attente d'un livreur).
+        commander_et_payer("4")
+        # 2. En cours (Alain accepte, Paul prépare, démarrage).
+        en_cours = commander_et_payer("6")
+        livraison_cours = Livraison.objects.get(commande=en_cours)
+        ServiceLivraison.accepter(alain, str(livraison_cours.id))
+        ServiceCommande.preparer(paul, str(en_cours.id))
+        ServiceLivraison.demarrer(alain, str(livraison_cours.id))
+        # 3. Livrée (code réel déchiffré pour la démo).
+        livree = commander_et_payer("2")
+        livraison_finie = Livraison.objects.get(commande=livree)
+        ServiceLivraison.accepter(alain, str(livraison_finie.id))
+        ServiceCommande.preparer(paul, str(livree.id))
+        ServiceLivraison.demarrer(alain, str(livraison_finie.id))
+        code = dechiffrer_code(Livraison.objects.get(id=livraison_finie.id).code_remise_chiffre)
+        ServiceLivraison.confirmer_remise(alain, str(livraison_finie.id), code)
+        self.stdout.write("Livraisons de démonstration prêtes (proposée, en cours, livrée).")
 
     @staticmethod
     def _justificatifs(

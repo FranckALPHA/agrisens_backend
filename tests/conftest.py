@@ -126,6 +126,21 @@ def _donnees_migration_garanties(request):
     yield
 
 
+@pytest.fixture(autouse=True)
+def _abonnements_applicatifs_garantis():
+    """Rétablit les abonnements du bus vidés par certains tests (F-07, unit).
+
+    `abonner` étant idempotent, cette fixture sans état répare l'invariant
+    d'application quel que soit l'ordre d'exécution des tests.
+    """
+    from apps.livraisons.services import creer_apres_paiement
+    from apps.paiements.evenements import PaiementReussi
+    from commun.evenements import abonner
+
+    abonner(PaiementReussi, creer_apres_paiement)
+    yield
+
+
 @pytest.fixture
 def verifier_garde_route(client_authentifie: Callable[..., tuple[APIClient, Any]]):
     """Aide prompt F-02 point 7 : 401 sans jeton, 403 rôles interdits, succès autorisés.

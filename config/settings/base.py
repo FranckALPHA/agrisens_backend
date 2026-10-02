@@ -148,6 +148,7 @@ INSTALLED_APPS = [
     "apps.produits.apps.ProduitsConfig",
     "apps.commandes.apps.CommandesConfig",
     "apps.paiements.apps.PaiementsConfig",
+    "apps.livraisons.apps.LivraisonsConfig",
 ]
 
 MIDDLEWARE = [
@@ -244,6 +245,9 @@ SPECTACULAR_SETTINGS = {
         "TypeNotificationEnum": "apps.notifications.models.TypeNotification",
         "TypeJustificatifEnum": "apps.profils.models.TypeJustificatif",
         "StatutCommandeEnum": "apps.commandes.models.StatutCommande",
+        "StatutLivraisonEnum": "apps.livraisons.models.StatutLivraison",
+        "TypeIncidentEnum": "apps.livraisons.models.TypeIncident",
+        "OperateurPaiementEnum": "apps.paiements.models.OperateurPaiement",
     },
 }
 
