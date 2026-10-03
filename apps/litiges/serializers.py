@@ -28,8 +28,18 @@ class RemboursementCreationSerializer(serializers.Serializer):
 
 
 class RemboursementSerializer(serializers.ModelSerializer):
-    commande_reference = serializers.CharField(source="commande.reference", read_only=True)
+    commande_reference = serializers.SerializerMethodField()
     demandeur_nom = serializers.CharField(source="demandeur.nom", read_only=True)
+
+    def get_commande_reference(self, obj: Remboursement) -> str | None:
+        # F-11 : un remboursement peut être lié à une commande ou à un
+        # accompagnement ; on renvoie le libellé disponible.
+        commande = obj.commande
+        if commande is not None:
+            return commande.reference
+        if obj.accompagnement_id:
+            return f"Accompagnement {obj.accompagnement_id[:8]}"
+        return None
 
     class Meta:
         model = Remboursement
@@ -37,6 +47,7 @@ class RemboursementSerializer(serializers.ModelSerializer):
             "id",
             "commande",
             "commande_reference",
+            "accompagnement",
             "paiement",
             "demandeur",
             "demandeur_nom",

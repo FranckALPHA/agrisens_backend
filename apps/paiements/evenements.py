@@ -13,4 +13,5 @@ from commun.evenements import Evenement
 class PaiementReussi(Evenement):
     paiement_id: str = ""
     commande_id: str = ""
+    accompagnement_id: str = ""
     montant_fcfa: int = 0

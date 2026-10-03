@@ -114,12 +114,16 @@ class VueListeIngenieurs(APIView):
         summary="Lister les ingénieurs validés et disponibles",
         operation_id="ingenieurs_lister",
         description=(
-            "Filtres `specialite` (code du référentiel) et `region`. "
-            "Le filtre par exploitation (zone) sera ajouté en F-11."
+            "Filtres `specialite` (code du référentiel), `region` et, depuis F-11, "
+            "`exploitation_id` (la zone de l'ingénieur couvre le centre de "
+            "l'exploitation)."
         ),
         parameters=[
             OpenApiParameter("specialite", str, description="Code de spécialité"),
             OpenApiParameter("region", str, description="Code de région"),
+            OpenApiParameter(
+                "exploitation_id", str, description="Filtre par zone (F-11)"
+            ),
         ],
         responses={200: LISTE_INGENIEURS},
     )
@@ -127,6 +131,7 @@ class VueListeIngenieurs(APIView):
         profils = ServiceProfilIngenieur.lister_valides(
             specialite=request.query_params.get("specialite") or None,
             region=request.query_params.get("region") or None,
+            exploitation_id=request.query_params.get("exploitation_id") or None,
         )
         return reponse_liste(request, profils, IngenieurPublicSerializer)
 

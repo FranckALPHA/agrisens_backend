@@ -120,7 +120,12 @@ class Signalement(ModeleBase):
 
 
 class Remboursement(ModeleBase):
-    """Demande de remboursement liée au paiement d'une commande (02 §2.4)."""
+    """Demande de remboursement liée à un paiement (02 §2.4).
+
+    F-11 : le remboursement automatique Q-30 (ingénieur absent) n'a pas de
+    commande — la FK `commande` devient donc nullable, et `accompagnement`
+    permet de rattacher un remboursement à l'accompagnement concerné.
+    """
 
     paiement = models.ForeignKey(
         Paiement,
@@ -129,6 +134,15 @@ class Remboursement(ModeleBase):
     )
     commande = models.ForeignKey(
         Commande,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="remboursements",
+    )
+    accompagnement = models.ForeignKey(
+        "accompagnements.Accompagnement",
+        null=True,
+        blank=True,
         on_delete=models.PROTECT,
         related_name="remboursements",
     )
@@ -153,7 +167,8 @@ class Remboursement(ModeleBase):
         default=StatutRemboursement.DEMANDE,
     )
     # Restauration du statut de commande si l'admin refuse (02 §3.1).
-    statut_commande_origine = models.CharField(max_length=30)
+    # F-11 : reste vide pour les remboursements d'accompagnement.
+    statut_commande_origine = models.CharField(max_length=30, blank=True, default="")
     motif_decision = models.TextField(null=True, blank=True)
     decide_par = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -177,6 +192,7 @@ class Remboursement(ModeleBase):
             models.Index(fields=["statut"], name="remboursement_statut_idx"),
             models.Index(fields=["demandeur", "statut"], name="remboursement_dem_statut_idx"),
             models.Index(fields=["commande"], name="remboursement_commande_idx"),
+            models.Index(fields=["accompagnement"], name="remboursement_accomp_idx"),
         ]
 
     def __str__(self) -> str:

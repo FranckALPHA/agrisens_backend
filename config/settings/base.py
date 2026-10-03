@@ -150,6 +150,7 @@ INSTALLED_APPS = [
     "apps.paiements.apps.PaiementsConfig",
     "apps.livraisons.apps.LivraisonsConfig",
     "apps.litiges.apps.LitigesConfig",
+    "apps.accompagnements.apps.AccompagnementsConfig",
 ]
 
 MIDDLEWARE = [

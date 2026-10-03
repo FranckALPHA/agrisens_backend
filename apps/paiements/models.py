@@ -38,12 +38,19 @@ class Paiement(ModeleBase):
         on_delete=models.PROTECT,
         related_name="paiements",
     )
-    # F-07 : seul l'objet `commande` existe. Les colonnes `abonnement` et
-    # `accompagnement` deviendront des clés étrangères en F-11 (accompagnement)
-    # et F-17 (abonnements), avec le CHECK « une seule FK cohérente avec objet »
-    # du modèle 02 §4.
+    # F-07 : seul l'objet `commande` existe. La colonne `abonnement` deviendra
+    # une clé étrangère en F-17 (abonnements), avec le CHECK « une seule FK
+    # cohérente avec objet » du modèle 02 §4.
     abonnement = models.CharField(max_length=36, null=True, blank=True)
-    accompagnement = models.CharField(max_length=36, null=True, blank=True)
+    # F-11 : `accompagnement` devient une FK nullable vers
+    # `accompagnements.Accompagnement` (migration `0003_accompagnement_fk`).
+    accompagnement = models.ForeignKey(
+        "accompagnements.Accompagnement",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="paiements",
+    )
     payeur = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

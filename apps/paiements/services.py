@@ -407,6 +407,18 @@ class ServicePaiement:
         paiement.statut = StatutPaiement.REUSSI
         paiement.confirme_le = maintenant()
         paiement.save()
+        # F-11 : paiement d'un accompagnement, `acceptee -> planifiee` via le
+        # bus d'événements (`apps/accompagnements/services.py::sur_paiement_reussi`).
+        if paiement.objet == ObjetPaiement.ACCOMPAGNEMENT and paiement.accompagnement_id:
+            publier(
+                PaiementReussi(
+                    paiement_id=str(paiement.id),
+                    commande_id="",
+                    accompagnement_id=str(paiement.accompagnement_id),
+                    montant_fcfa=paiement.montant_fcfa,
+                )
+            )
+            return {"statut": "reussi", "paiement_id": str(paiement.id)}
         commande = Commande.objects.select_for_update().filter(id=paiement.commande_id).first()
         note = None
         if commande is not None and commande.statut in (
@@ -603,7 +615,27 @@ class ServiceSoldes:
                 livreur_id=utilisateur.id, statut=StatutLivraison.LIVREE
             ).aggregate(total=Sum("commande__frais_livraison_fcfa"))
             gains_bruts = int(agrégat["total"] or 0)
-        # Ingénieur : accompagnement absent en V1 (F-11), gains nuls.
+        elif utilisateur.role == RoleUtilisateur.INGENIEUR_AGRONOME:
+            # F-11 : gains ingénieur = consultation − commission + déplacement
+            # des accompagnements `terminee` (02 §2.4, Q-06). Les RDV manqués
+            # ou annulés ne rentrent pas ; un remboursement postérieur (Q-30)
+            # est porté sur le solde de l'agriculteur qui a payé, pas sur
+            # celui de l'ingénieur qui n'a rien gagné.
+            from apps.accompagnements.models import Accompagnement, StatutAccompagnement
+
+            agrégat = Accompagnement.objects.filter(
+                ingenieur_id=utilisateur.id, statut=StatutAccompagnement.TERMINEE
+            ).aggregate(
+                consultation=Sum("prix_consultation_fcfa", default=0),
+                deplacement=Sum("frais_deplacement_fcfa", default=0),
+                commission=Sum("commission_consultation_fcfa", default=0),
+            )
+            gains_bruts = int(
+                (agrégat["consultation"] or 0)
+                + (agrégat["deplacement"] or 0)
+                - (agrégat["commission"] or 0)
+            )
+        # Soldes des autres roles restent à zéro.
 
         deja_reverse = cls._reverse_cumule(utilisateur.id)
         return {

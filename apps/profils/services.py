@@ -423,10 +423,18 @@ class ServiceProfilIngenieur:
     # --- Consultation publique ---------------------------------------------
 
     @staticmethod
-    def lister_valides(*, specialite: str | None, region: str | None) -> list[IngenieurProfil]:
+    def lister_valides(
+        *,
+        specialite: str | None,
+        region: str | None,
+        exploitation_id: str | None = None,
+    ) -> list[IngenieurProfil]:
         """GET /ingenieurs — validés et disponibles, filtres specialite/region.
 
-        Le filtre par exploitation (zone) sera ajouté en F-11 (prompt F-03).
+        F-11 : ajoute le filtre `exploitation_id` — ne gardent que les
+        ingénieurs dont la zone (centre + rayon) couvre le centre de
+        l'exploitation (décision D-14, 07 §15.6). Un ingénieur sans zone
+        configurée reste retenu : rien à rejeter sur ce critère.
         """
         queryset = IngenieurProfil.objects.select_related("utilisateur").filter(
             statut_validation=StatutValidation.VALIDE, disponible=True
@@ -436,7 +444,33 @@ class ServiceProfilIngenieur:
             queryset = queryset.filter(specialites__contains=[specialite])
         if region:
             queryset = queryset.filter(region=region)
-        return list(queryset.order_by("-maj_le"))
+        profils = list(queryset.order_by("-maj_le"))
+        if exploitation_id:
+            from commun.geo import distance_km
+
+            from apps.exploitations.models import Exploitation
+
+            exploitation = Exploitation.objects.filter(id=exploitation_id).first()
+            if exploitation is None:
+                return []
+            centre = exploitation.centre
+            centre_geo = (
+                centre.__geo_interface__ if hasattr(centre, "__geo_interface__") else centre
+            )
+            filtres: list[IngenieurProfil] = []
+            for profil in profils:
+                zone = profil.zone_centre
+                if zone is None or profil.zone_rayon_km is None:
+                    filtres.append(profil)
+                    continue
+                zone_geo = zone.__geo_interface__ if hasattr(zone, "__geo_interface__") else zone
+                try:
+                    if distance_km(zone_geo, centre_geo) <= float(profil.zone_rayon_km):
+                        filtres.append(profil)
+                except Exception:
+                    continue
+            profils = filtres
+        return profils
 
     @staticmethod
     def obtenir_public(ingenieur_id: str) -> IngenieurProfil:

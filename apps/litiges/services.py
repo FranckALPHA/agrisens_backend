@@ -92,6 +92,27 @@ def _liens_justificatifs(remboursement: Remboursement, fichiers: list[Fichier]) 
         remboursement.justificatifs.add(fichier)
 
 
+def _libelle_rattachement(remboursement: Remboursement) -> tuple[str, str, str]:
+    """F-11 : un remboursement peut être lié à une commande ou à un accompagnement.
+
+    Retourne `(libellé, lien, genre)` : `genre` = « e » pour les objets
+    féminins (commande, accompagnement… non) — on reste volontairement sur
+    des libellés au féminin pour les commandes (title « remboursée ») et
+    neutre pour les accompagnements.
+    """
+    commande = remboursement.commande
+    if commande is not None:
+        return f"Commande {commande.reference}", f"/commandes/{commande.id}", "e"
+    accompagnement = getattr(remboursement, "accompagnement", None)
+    if accompagnement is not None:
+        return (
+            f"Accompagnement {accompagnement.id[:8]}",
+            f"/agriculteur/accompagnement/{accompagnement.id}",
+            "",
+        )
+    return "Paiement", f"/paiements/{remboursement.paiement_id}", ""
+
+
 class ServiceRemboursement:
     """Demande, examen, approbation/refus et exécution manuelle (Q-26)."""
 
@@ -271,12 +292,13 @@ class ServiceRemboursement:
         remboursement.save(
             update_fields=["montant_accorde_fcfa", "decide_par", "decide_le", "maj_le"]
         )
+        libelle, lien, _ = _libelle_rattachement(remboursement)
         notifier(
             remboursement.demandeur,
             "commande",
-            f"Remboursement approuvé {remboursement.commande.reference}",
+            f"Remboursement approuvé {libelle}",
             f"{montant_accorde_fcfa} FCFA accordés, en cours d'exécution.",
-            lien=f"/commandes/{remboursement.commande_id}",
+            lien=lien,
         )
         return remboursement
 
@@ -297,18 +319,20 @@ class ServiceRemboursement:
         remboursement.decide_le = maintenant()
         remboursement.save(update_fields=["motif_decision", "decide_par", "decide_le", "maj_le"])
         # La commande retrouve son statut d'avant la demande (§3.1).
-        ServiceCommande.retour_apres_refus_remboursement(
-            str(remboursement.commande_id),
-            remboursement.statut_commande_origine,
-            admin,
-            "Remboursement refusé.",
-        )
+        if remboursement.commande_id:
+            ServiceCommande.retour_apres_refus_remboursement(
+                str(remboursement.commande_id),
+                remboursement.statut_commande_origine,
+                admin,
+                "Remboursement refusé.",
+            )
+        libelle, lien, _ = _libelle_rattachement(remboursement)
         notifier(
             remboursement.demandeur,
             "commande",
-            f"Remboursement refusé {remboursement.commande.reference}",
+            f"Remboursement refusé {libelle}",
             motif_propre,
-            lien=f"/commandes/{remboursement.commande_id}",
+            lien=lien,
         )
         return remboursement
 
@@ -332,15 +356,17 @@ class ServiceRemboursement:
         _transition(remboursement, StatutRemboursement.EFFECTUE, admin, reference)
         remboursement.reference_operateur = reference
         remboursement.save(update_fields=["reference_operateur", "maj_le"])
-        ServiceCommande.marquer_remboursee(
-            str(remboursement.commande_id), admin, "Remboursement exécuté."
-        )
+        if remboursement.commande_id:
+            ServiceCommande.marquer_remboursee(
+                str(remboursement.commande_id), admin, "Remboursement exécuté."
+            )
+        libelle, lien, genre = _libelle_rattachement(remboursement)
         notifier(
             remboursement.demandeur,
             "commande",
-            f"Commande {remboursement.commande.reference} remboursée",
+            f"{libelle} remboursé{genre}",
             f"{remboursement.montant_accorde_fcfa} FCFA remboursés (réf. {reference}).",
-            lien=f"/commandes/{remboursement.commande_id}",
+            lien=lien,
         )
         return remboursement
 
