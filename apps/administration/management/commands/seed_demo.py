@@ -8,8 +8,13 @@ e2e/fixtures/roles.ts côté frontend (mêmes téléphones, même mot de passe).
 Le mot de passe de démonstration n'est valide que pour les bases
 locales / test / e2e — jamais en production (prompt F-02 point 8).
 
-F-03 point 5 : profils de Nadia (en attente, avec justificatifs),
-de Clarisse (ingénieure validée) et de Jean (livreur).
+F-03 point 5 : profils de Nadia (ingénieure validée, avec justificatifs)
+et de Jean (livreur). F-11 (docs/12 PW-F11-01) : Nadia est positionnée
+environ 11,5 km au nord du « Champ Nord » de Paul, disponible et validée,
+ce qui donne un devis de déplacement de 4 800 FCFA (12 km × 2 × 200 FCFA,
+P-06 et 07 §15.6). Son compte est `ACTIF` et son profil `VALIDE` ; le
+parcours de validation E2E (PW-F03-01/02) repart d'une inscription
+fraîche et n'utilise donc pas ce compte.
 
 F-10 : un historique de paramètre, un reversement d'exemple et les
 offres d'abonnement (déjà insérées par la migration) pour que les
@@ -41,8 +46,10 @@ from apps.profils.models import (
 from apps.utilisateurs.models import RoleUtilisateur, StatutCompte, Utilisateur
 
 # Comptes des personnages (docs/12 §3 + prompt F-02 point 8).
-# Nadia est en attente de validation (F-02) ; Clarisse est l'ingénieure
-# validée que les features suivantes (F-11 accompagnement) utiliseront.
+# Nadia est l'ingénieure retenue par Paul pour l'accompagnement F-11 : son
+# profil est validé, disponible et positionné près du Champ Nord. Le
+# parcours E2E de validation d'un ingénieur (PW-F03) passe par une
+# inscription fraîche et ne dépend donc pas de ce compte.
 UTILISATEURS_DEMO: list[dict[str, str]] = [
     {
         "telephone": "+237690000000",
@@ -72,8 +79,8 @@ UTILISATEURS_DEMO: list[dict[str, str]] = [
         "telephone": "+237690000003",
         "nom": "Nadia Kamga",
         "role": RoleUtilisateur.INGENIEUR_AGRONOME,
-        "statut_compte": StatutCompte.EN_ATTENTE_VALIDATION,
-        "region": "Littoral",
+        "statut_compte": StatutCompte.ACTIF,
+        "region": "Centre",
         "email": "nadia@agrisens.local",
     },
     {
@@ -121,8 +128,11 @@ UTILISATEURS_DEMO: list[dict[str, str]] = [
 MOT_DE_PASSE_DEMO = "Motdepasse123!"
 
 # Positions GeoJSON (lon, lat) dans l'emprise du Cameroun (commun/geo.py).
-POINT_DOUALA: dict[str, Any] = {"type": "Point", "coordinates": [9.7679, 4.0483]}
 POINT_YAOUNDE: dict[str, Any] = {"type": "Point", "coordinates": [11.5137, 3.848]}
+# Hypothèse Q-44 : position de Nadia ≈ 11,5 km au nord de Yaoundé pour
+# que le devis F-11 de PW-F11-01 donne exactement 12 km facturés et
+# 4 800 FCFA de déplacement (24 km AR × 200 FCFA/km, P-06).
+POINT_NADIA: dict[str, Any] = {"type": "Point", "coordinates": [11.5137, 3.9520]}
 
 
 def _octets_pdf() -> bytes:
@@ -202,7 +212,7 @@ class Command(BaseCommand):
     # --- Profils F-03 --------------------------------------------------------
 
     def _profils_demo(self) -> None:
-        """Nadia (en attente + justificatifs), Clarisse (validée), Jean (livreur)."""
+        """Nadia (validée, disponible, près du Champ Nord), Clarisse (validée), Jean (livreur)."""
         par_telephone = {
             u.telephone: u
             for u in Utilisateur.objects.filter(
@@ -215,30 +225,36 @@ class Command(BaseCommand):
         }
 
         nadia = par_telephone["+237690000003"]
+        mireille = Utilisateur.objects.get(telephone="+237690000005")
         profil_nadia, _ = IngenieurProfil.objects.update_or_create(
             utilisateur=nadia,
             defaults={
                 "specialites": ["maraichage", "vivriers"],
-                "region": "littoral",
-                "zone_centre": POINT_DOUALA,
-                "zone_rayon_km": 50,
+                "region": "centre",
+                # Position volontairement à ~11,5 km du centre de « Champ Nord »
+                # pour que `km_superieurs` facture 12 km et donne 4 800 FCFA
+                # (docs/12 PW-F11-01, docs/04 §4).
+                "zone_centre": POINT_NADIA,
+                "zone_rayon_km": 60,
                 "tarif_consultation_fcfa": 10_000,
-                "disponible": False,
-                "biographie": "Ingénieure agronome à Douala, maraîchage et vivriers.",
+                "disponible": True,
+                "biographie": "Ingénieure agronome à Yaoundé, maraîchage et vivriers.",
                 "modalites": "Sur site ou en visioconférence, en semaine.",
-                "statut_validation": StatutValidation.EN_ATTENTE,
+                "statut_validation": StatutValidation.VALIDE,
                 "motif_refus": None,
-                "valide_par": None,
-                "valide_le": None,
+                "valide_par": mireille,
             },
         )
+        if profil_nadia.valide_le is None:
+            profil_nadia.valide_le = maintenant()
+            profil_nadia.save(update_fields=["valide_le", "maj_le"])
         self._justificatifs(
             profil_nadia,
             [
                 (TypeJustificatif.DIPLOME, "diplome-agronomie.pdf", _octets_pdf()),
                 (TypeJustificatif.PIECE_IDENTITE, "cin.jpg", _octets_jpeg()),
             ],
-            statut=StatutJustificatif.SOUMISE,
+            statut=StatutJustificatif.ACCEPTEE,
         )
 
         clarisse = par_telephone["+237690000006"]

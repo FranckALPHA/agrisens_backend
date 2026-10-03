@@ -20,7 +20,10 @@ def test_commande_seed_demo_idempotente() -> None:
 
     nadia = Utilisateur.objects.get(telephone="+237690000003")
     assert nadia.role == RoleUtilisateur.INGENIEUR_AGRONOME
-    assert nadia.statut_compte == StatutCompte.EN_ATTENTE_VALIDATION
+    # F-11 : Nadia est l'ingénieure de démo validée et disponible pour
+    # l'accompagnement de Paul (docs/12 PW-F11-01). Le parcours
+    # d'auto-validation (PW-F03) repart d'une inscription fraîche.
+    assert nadia.statut_compte == StatutCompte.ACTIF
     suspendu = Utilisateur.objects.get(telephone="+237690000099")
     assert suspendu.statut_compte == StatutCompte.SUSPENDU
 

@@ -1,0 +1,79 @@
+from django.urls import re_path
+
+from apps.accompagnements.views import (
+    VueAccepter,
+    VueAccompagnementDetail,
+    VueAnnuler,
+    VueChangerIngenieur,
+    VueConfirmer,
+    VueCreerAccompagnement,
+    VueDemandesIngenieur,
+    VueDevisAccompagnement,
+    VueMarquerManque,
+    VuePlanifier,
+    VueRefuser,
+    VueTerminer,
+)
+
+urlpatterns = [
+    re_path(
+        r"^accompagnements/devis/?$",
+        VueDevisAccompagnement.as_view(),
+        name="accompagnements_devis",
+    ),
+    re_path(
+        r"^accompagnements/demandes/?$",
+        VueDemandesIngenieur.as_view(),
+        name="accompagnements_demandes",
+    ),
+    re_path(
+        r"^accompagnements/?$",
+        VueCreerAccompagnement.as_view(),
+        name="accompagnements",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/?$",
+        VueAccompagnementDetail.as_view(),
+        name="accompagnement_detail",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/accepter/?$",
+        VueAccepter.as_view(),
+        name="accompagnement_accepter",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/refuser/?$",
+        VueRefuser.as_view(),
+        name="accompagnement_refuser",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/planifier/?$",
+        VuePlanifier.as_view(),
+        name="accompagnement_planifier",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/confirmer/?$",
+        VueConfirmer.as_view(),
+        name="accompagnement_confirmer",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/changer-ingenieur/?$",
+        VueChangerIngenieur.as_view(),
+        name="accompagnement_changer_ingenieur",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/marquer-manque/?$",
+        VueMarquerManque.as_view(),
+        name="accompagnement_marquer_manque",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/terminer/?$",
+        VueTerminer.as_view(),
+        name="accompagnement_terminer",
+    ),
+    re_path(
+        r"^accompagnements/(?P<identifiant>[0-9a-f-]+)/annuler/?$",
+        VueAnnuler.as_view(),
+        name="accompagnement_annuler",
+    ),
+]

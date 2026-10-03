@@ -6,6 +6,589 @@
         "description": "API REST AgriSens (Django 5.2 LTS + DRF + MySQL spatial). Mise en relation d'agriculteurs, acheteurs, ingénieurs et livreurs au Cameroun."
     },
     "paths": {
+        "/api/v1/accompagnements/": {
+            "get": {
+                "operationId": "accompagnements_lister",
+                "description": "POST /accompagnements — crée une demande ; GET — liste selon le rôle.",
+                "summary": "Lister les accompagnements visibles par l'appelant",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "role",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre côté client, ignoré ici"
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeAccompagnements"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "accompagnements_create",
+                "description": "POST /accompagnements — crée une demande ; GET — liste selon le rôle.",
+                "summary": "Créer une demande d'accompagnement",
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AccompagnementCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AccompagnementCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/": {
+            "get": {
+                "operationId": "accompagnements_retrieve",
+                "summary": "Détail d'un accompagnement (parties + admin)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccompagnementDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/accepter/": {
+            "post": {
+                "operationId": "accompagnements_accepter_create",
+                "summary": "Accepter la demande",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/annuler/": {
+            "post": {
+                "operationId": "accompagnements_annuler_create",
+                "summary": "Annuler sa demande",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/changer-ingenieur/": {
+            "post": {
+                "operationId": "accompagnements_changer_ingenieur_create",
+                "description": "Avant paiement : agriculteur ou admin. Après paiement : admin uniquement, montant conservé (hypothèse Q-44).",
+                "summary": "Changer l'ingénieur affecté (Q-29, historisé)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangerIngenieurRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangerIngenieurRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/confirmer/": {
+            "post": {
+                "operationId": "accompagnements_confirmer_create",
+                "description": "En-tête `Idempotency-Key` supporté ; retourne l'URL NotchPay. Le passage à `planifiee` se fait au webhook (Q-05).",
+                "summary": "Confirmer le RDV et initier le paiement",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmerRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmerRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/marquer-manque/": {
+            "post": {
+                "operationId": "accompagnements_marquer_manque_create",
+                "description": "Ingénieur absent → remboursement automatique. Agriculteur absent → reprogrammation gratuite.",
+                "summary": "Marquer le RDV manqué (Q-30)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarquerManqueRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarquerManqueRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/planifier/": {
+            "post": {
+                "operationId": "accompagnements_planifier_create",
+                "description": "Verrou SELECT FOR UPDATE sur les RDV chevauchants du même ingénieur ; fige le montant avant confirmation.",
+                "summary": "Planifier le rendez-vous (conflit de créneau → 409)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanifierRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanifierRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "description": "conflit_creneau"
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/refuser/": {
+            "post": {
+                "operationId": "accompagnements_refuser_create",
+                "summary": "Refuser la demande (motif obligatoire)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefusRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefusRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "422": {
+                        "description": "motif_obligatoire"
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/{identifiant}/terminer/": {
+            "post": {
+                "operationId": "accompagnements_terminer_create",
+                "summary": "Clôturer l'accompagnement (observation obligatoire)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TerminerRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TerminerRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accompagnement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "422": {
+                        "description": "observation_obligatoire"
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/demandes/": {
+            "get": {
+                "operationId": "accompagnements_demandes_list",
+                "summary": "Demandes reçues par cet ingénieur",
+                "tags": [
+                    "accompagnements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Accompagnement"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/accompagnements/devis/": {
+            "post": {
+                "operationId": "accompagnements_devis_create",
+                "description": "Consultation = tarif profil ingénieur ; déplacement = 2 × km aller arrondi au km supérieur × tarif km, borné min/plafond (P-06). Refuse le présentiel si la distance dépasse `deplacement.distance_max_km` (hypothèse Q-44).",
+                "summary": "Devis consultation + déplacement, sans rien créer",
+                "tags": [
+                    "accompagnements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DevisCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DevisCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DevisReponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "422": {
+                        "description": "validation"
+                    }
+                }
+            }
+        },
         "/api/v1/admin/audit/": {
             "get": {
                 "operationId": "admin_audit_retrieve",
@@ -2769,9 +3352,17 @@
         "/api/v1/ingenieurs/": {
             "get": {
                 "operationId": "ingenieurs_lister",
-                "description": "Filtres `specialite` (code du référentiel) et `region`. Le filtre par exploitation (zone) sera ajouté en F-11.",
+                "description": "Filtres `specialite` (code du référentiel), `region` et, depuis F-11, `exploitation_id` (la zone de l'ingénieur couvre le centre de l'exploitation).",
                 "summary": "Lister les ingénieurs validés et disponibles",
                 "parameters": [
+                    {
+                        "in": "query",
+                        "name": "exploitation_id",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre par zone (F-11)"
+                    },
                     {
                         "in": "query",
                         "name": "region",
@@ -4803,6 +5394,415 @@
     },
     "components": {
         "schemas": {
+            "AbsentEnum": {
+                "enum": [
+                    "ingenieur",
+                    "agriculteur"
+                ],
+                "type": "string",
+                "description": "* `ingenieur` - Ingénieur absent\n* `agriculteur` - Agriculteur absent"
+            },
+            "Accompagnement": {
+                "type": "object",
+                "description": "Lecture publique d'un accompagnement (liste + détail).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "agriculteur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "agriculteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ingenieur": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Ingénieur actuellement affecté"
+                    },
+                    "ingenieur_nom": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "exploitation": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "exploitation_nom": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "modalite": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ModaliteEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "motif": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Statut86dEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "lieu_rdv": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "nullable": true
+                    },
+                    "lieu_rdv_texte": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "lien_visio": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Lien de visioconférence en modalité « en ligne » (hypothèse Q-44)"
+                    },
+                    "date_rdv_debut": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "date_rdv_fin": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "prix_consultation_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Figé à la confirmation (02 §2.5)"
+                    },
+                    "frais_deplacement_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Figé à la confirmation, 0 si en ligne (02 §2.5)"
+                    },
+                    "distance_km": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Aller simple, arrondie au km supérieur (02 §2.5, conventions §3)"
+                    },
+                    "commission_consultation_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Commission retenue sur la consultation, figée à la confirmation (Q-06)"
+                    },
+                    "observation": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Compte rendu obligatoire de l'ingénieur à la clôture"
+                    },
+                    "nb_rdv_manques": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "agriculteur",
+                    "agriculteur_nom",
+                    "commission_consultation_fcfa",
+                    "cree_le",
+                    "date_rdv_debut",
+                    "date_rdv_fin",
+                    "description",
+                    "distance_km",
+                    "exploitation",
+                    "exploitation_nom",
+                    "frais_deplacement_fcfa",
+                    "id",
+                    "ingenieur",
+                    "ingenieur_nom",
+                    "lien_visio",
+                    "lieu_rdv_texte",
+                    "maj_le",
+                    "modalite",
+                    "motif",
+                    "nb_rdv_manques",
+                    "observation",
+                    "prix_consultation_fcfa",
+                    "statut"
+                ]
+            },
+            "AccompagnementCreationRequest": {
+                "type": "object",
+                "description": "POST /accompagnements — crée une demande en `demandee`.",
+                "properties": {
+                    "exploitation_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    },
+                    "ingenieur_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    },
+                    "modalite": {
+                        "$ref": "#/components/schemas/ModaliteEnum"
+                    },
+                    "motif": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "exploitation_id",
+                    "ingenieur_id",
+                    "modalite",
+                    "motif"
+                ]
+            },
+            "AccompagnementDetail": {
+                "type": "object",
+                "description": "Détail + historique des transitions et affectations.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "agriculteur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "agriculteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ingenieur": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Ingénieur actuellement affecté"
+                    },
+                    "ingenieur_nom": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "exploitation": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "exploitation_nom": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "modalite": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ModaliteEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "motif": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Statut86dEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "lieu_rdv": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "nullable": true
+                    },
+                    "lieu_rdv_texte": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "lien_visio": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Lien de visioconférence en modalité « en ligne » (hypothèse Q-44)"
+                    },
+                    "date_rdv_debut": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "date_rdv_fin": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "prix_consultation_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Figé à la confirmation (02 §2.5)"
+                    },
+                    "frais_deplacement_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Figé à la confirmation, 0 si en ligne (02 §2.5)"
+                    },
+                    "distance_km": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Aller simple, arrondie au km supérieur (02 §2.5, conventions §3)"
+                    },
+                    "commission_consultation_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Commission retenue sur la consultation, figée à la confirmation (Q-06)"
+                    },
+                    "observation": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Compte rendu obligatoire de l'ingénieur à la clôture"
+                    },
+                    "nb_rdv_manques": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "historique": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "affectations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AffectationIngenieur"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "affectations",
+                    "agriculteur",
+                    "agriculteur_nom",
+                    "commission_consultation_fcfa",
+                    "cree_le",
+                    "date_rdv_debut",
+                    "date_rdv_fin",
+                    "description",
+                    "distance_km",
+                    "exploitation",
+                    "exploitation_nom",
+                    "frais_deplacement_fcfa",
+                    "historique",
+                    "id",
+                    "ingenieur",
+                    "ingenieur_nom",
+                    "lien_visio",
+                    "lieu_rdv_texte",
+                    "maj_le",
+                    "modalite",
+                    "motif",
+                    "nb_rdv_manques",
+                    "observation",
+                    "prix_consultation_fcfa",
+                    "statut"
+                ]
+            },
             "Adresse": {
                 "type": "object",
                 "description": "ADRESSE — position en GeoJSON Point (conventions §3).",
@@ -4917,6 +5917,60 @@
                     "ville"
                 ]
             },
+            "AffectationIngenieur": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ingenieur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ingenieur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "debut": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "fin": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "motif_fin": {
+                        "readOnly": true,
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/MotifFinEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "debut",
+                    "fin",
+                    "id",
+                    "ingenieur",
+                    "ingenieur_nom",
+                    "motif_fin"
+                ]
+            },
             "ApprouverRemboursementRequest": {
                 "type": "object",
                 "description": "POST /admin/remboursements/{id}/approuver — montant total ou partiel.",
@@ -4998,6 +6052,20 @@
                     "page",
                     "taille",
                     "total"
+                ]
+            },
+            "ChangerIngenieurRequest": {
+                "type": "object",
+                "description": "POST /{id}/changer-ingenieur — historisé (Q-29).",
+                "properties": {
+                    "ingenieur_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    }
+                },
+                "required": [
+                    "ingenieur_id"
                 ]
             },
             "CibleSignalementEnum": {
@@ -5228,6 +6296,22 @@
                     "signalements_ouverts"
                 ]
             },
+            "ConfirmerRequest": {
+                "type": "object",
+                "description": "POST /{id}/confirmer — l'agriculteur accepte le montant et paie.",
+                "properties": {
+                    "operateur": {
+                        "$ref": "#/components/schemas/Operateur370Enum"
+                    },
+                    "telephone": {
+                        "type": "string",
+                        "maxLength": 20
+                    }
+                },
+                "required": [
+                    "operateur"
+                ]
+            },
             "ConnexionRequest": {
                 "type": "object",
                 "description": "POST /auth/connexion — téléphone E.164 ou email + mot de passe.",
@@ -5356,6 +6440,72 @@
                 },
                 "required": [
                     "telephone"
+                ]
+            },
+            "DevisCreationRequest": {
+                "type": "object",
+                "description": "POST /accompagnements/devis — calcule le prix sans rien créer.",
+                "properties": {
+                    "exploitation_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    },
+                    "ingenieur_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    },
+                    "modalite": {
+                        "$ref": "#/components/schemas/ModaliteEnum"
+                    }
+                },
+                "required": [
+                    "exploitation_id",
+                    "ingenieur_id",
+                    "modalite"
+                ]
+            },
+            "DevisReponse": {
+                "type": "object",
+                "properties": {
+                    "consultation_fcfa": {
+                        "type": "integer"
+                    },
+                    "deplacement_fcfa": {
+                        "type": "integer"
+                    },
+                    "distance_km_aller": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "distance_exacte_km": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "commission_consultation_fcfa": {
+                        "type": "integer"
+                    },
+                    "taux_commission_pb": {
+                        "type": "integer"
+                    },
+                    "total_fcfa": {
+                        "type": "integer"
+                    },
+                    "gain_ingénieur_fcfa": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "commission_consultation_fcfa",
+                    "consultation_fcfa",
+                    "deplacement_fcfa",
+                    "distance_exacte_km",
+                    "distance_km_aller",
+                    "gain_ingénieur_fcfa",
+                    "taux_commission_pb",
+                    "total_fcfa"
                 ]
             },
             "DevisRequest": {
@@ -6285,6 +7435,32 @@
                     "quantite"
                 ]
             },
+            "ListeAccompagnements": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Accompagnement"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
             "ListeAudit": {
                 "type": "object",
                 "properties": {
@@ -6680,6 +7856,18 @@
                     "zone"
                 ]
             },
+            "MarquerManqueRequest": {
+                "type": "object",
+                "description": "POST /{id}/marquer-manque — qui est absent (Q-30).",
+                "properties": {
+                    "absent": {
+                        "$ref": "#/components/schemas/AbsentEnum"
+                    }
+                },
+                "required": [
+                    "absent"
+                ]
+            },
             "MesProduits": {
                 "type": "object",
                 "properties": {
@@ -6705,6 +7893,14 @@
                     "taille",
                     "total"
                 ]
+            },
+            "ModaliteEnum": {
+                "enum": [
+                    "en_ligne",
+                    "presentiel"
+                ],
+                "type": "string",
+                "description": "* `en_ligne` - En ligne\n* `presentiel` - Présentiel"
             },
             "MotDePasseRequest": {
                 "type": "object",
@@ -6748,6 +7944,17 @@
                     "message",
                     "mot_de_passe_temporaire"
                 ]
+            },
+            "MotifFinEnum": {
+                "enum": [
+                    "indisponibilite",
+                    "desistement",
+                    "refus",
+                    "termine",
+                    "changement"
+                ],
+                "type": "string",
+                "description": "* `indisponibilite` - Indisponibilité\n* `desistement` - Désistement\n* `refus` - Refus\n* `termine` - Terminé\n* `changement` - Changement d'ingénieur"
             },
             "MotifRemboursementEnum": {
                 "enum": [
@@ -6930,6 +8137,14 @@
                     "quota_planning_mois",
                     "quota_recommandation_mois"
                 ]
+            },
+            "Operateur370Enum": {
+                "enum": [
+                    "mtn_momo",
+                    "orange_money"
+                ],
+                "type": "string",
+                "description": "* `mtn_momo` - MTN\n* `orange_money` - Orange"
             },
             "OperateurPaiementEnum": {
                 "enum": [
@@ -7389,6 +8604,60 @@
                     "fichier_ids"
                 ]
             },
+            "PlanifierRequest": {
+                "type": "object",
+                "description": "POST /{id}/planifier — date, durée, lieu ou lien.",
+                "properties": {
+                    "date_debut": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "date_fin": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "lieu_rdv": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "coordinates": {
+                                "type": "array",
+                                "items": {},
+                                "description": "Coordonnées GeoJSON (imbrication selon le type : Point, LineString ou Polygon)."
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "coordinates"
+                        ],
+                        "description": "Géométrie GeoJSON (SRID 4326, ordre x=longitude, y=latitude).",
+                        "nullable": true
+                    },
+                    "lieu_rdv_texte": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "lien_visio": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "date_debut",
+                    "date_fin"
+                ]
+            },
             "PositionLivreurRequest": {
                 "type": "object",
                 "description": "POST /livraisons/{id}/position — GeoJSON Point pendant la course.",
@@ -7762,6 +9031,19 @@
                     "motif"
                 ]
             },
+            "RefusRequest": {
+                "type": "object",
+                "description": "POST /{id}/refuser — motif obligatoire (règle dans le service).",
+                "properties": {
+                    "motif": {
+                        "type": "string",
+                        "maxLength": 1000
+                    }
+                },
+                "required": [
+                    "motif"
+                ]
+            },
             "RefuserRemboursementRequest": {
                 "type": "object",
                 "description": "POST /admin/remboursements/{id}/refuser — motif obligatoire (07 §15.3).\n\nLa règle « motif non vide » vit dans le service (`motif_obligatoire`).",
@@ -7784,11 +9066,18 @@
                     },
                     "commande": {
                         "type": "string",
-                        "readOnly": true
+                        "readOnly": true,
+                        "nullable": true
                     },
                     "commande_reference": {
                         "type": "string",
+                        "nullable": true,
                         "readOnly": true
+                    },
+                    "accompagnement": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
                     },
                     "paiement": {
                         "type": "string",
@@ -7871,6 +9160,7 @@
                     }
                 },
                 "required": [
+                    "accompagnement",
                     "commande",
                     "commande_reference",
                     "cree_le",
@@ -7988,14 +9278,6 @@
                     "tache"
                 ]
             },
-            "ReprogrammerOperateurEnum": {
-                "enum": [
-                    "mtn_momo",
-                    "orange_money"
-                ],
-                "type": "string",
-                "description": "* `mtn_momo` - MTN\n* `orange_money` - Orange"
-            },
             "ReprogrammerRequest": {
                 "type": "object",
                 "description": "Reprogrammation : nouvelle adresse optionnelle + paiement si frais dus.",
@@ -8009,7 +9291,7 @@
                         "nullable": true,
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/ReprogrammerOperateurEnum"
+                                "$ref": "#/components/schemas/Operateur370Enum"
                             },
                             {
                                 "$ref": "#/components/schemas/NullEnum"
@@ -8383,6 +9665,19 @@
                     "solde"
                 ]
             },
+            "Statut86dEnum": {
+                "enum": [
+                    "demandee",
+                    "acceptee",
+                    "refusee",
+                    "annulee",
+                    "planifiee",
+                    "terminee",
+                    "manquee"
+                ],
+                "type": "string",
+                "description": "* `demandee` - Demandée\n* `acceptee` - Acceptée\n* `refusee` - Refusée\n* `annulee` - Annulée\n* `planifiee` - Planifiée\n* `terminee` - Terminée\n* `manquee` - Manquée"
+            },
             "StatutCommandeEnum": {
                 "enum": [
                     "en_attente",
@@ -8486,6 +9781,18 @@
                 "required": [
                     "contexte",
                     "fichier"
+                ]
+            },
+            "TerminerRequest": {
+                "type": "object",
+                "description": "POST /{id}/terminer — observation obligatoire.",
+                "properties": {
+                    "observation": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "observation"
                 ]
             },
             "TraiterSignalementRequest": {
