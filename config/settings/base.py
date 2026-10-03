@@ -149,6 +149,7 @@ INSTALLED_APPS = [
     "apps.commandes.apps.CommandesConfig",
     "apps.paiements.apps.PaiementsConfig",
     "apps.livraisons.apps.LivraisonsConfig",
+    "apps.litiges.apps.LitigesConfig",
 ]
 
 MIDDLEWARE = [
@@ -248,6 +249,10 @@ SPECTACULAR_SETTINGS = {
         "StatutLivraisonEnum": "apps.livraisons.models.StatutLivraison",
         "TypeIncidentEnum": "apps.livraisons.models.TypeIncident",
         "OperateurPaiementEnum": "apps.paiements.models.OperateurPaiement",
+        "StatutRemboursementEnum": "apps.litiges.models.StatutRemboursement",
+        "MotifRemboursementEnum": "apps.litiges.models.MotifRemboursement",
+        "CibleSignalementEnum": "apps.litiges.models.CibleSignalement",
+        "StatutSignalementEnum": "apps.litiges.models.StatutSignalement",
     },
 }
 

@@ -391,6 +391,8 @@ def test_liste_admin_recherche_et_compteurs(
         "ingenieurs_en_attente",
         "reinitialisations_en_attente",
         "comptes_suspendus",
+        "litiges_en_attente",
+        "signalements_ouverts",
     }
 
 

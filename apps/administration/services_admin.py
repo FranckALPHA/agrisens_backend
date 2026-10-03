@@ -347,6 +347,9 @@ class ServiceAdminUtilisateurs:
 
     @staticmethod
     def compteurs() -> dict[str, int]:
+        # Import local : l'app litiges dépend de ce module (F-09).
+        from apps.litiges.models import Remboursement, Signalement, StatutSignalement
+
         return {
             "ingenieurs_en_attente": IngenieurProfil.objects.filter(
                 statut_validation=StatutValidation.EN_ATTENTE
@@ -358,6 +361,12 @@ class ServiceAdminUtilisateurs:
             .count(),
             "comptes_suspendus": Utilisateur.objects.filter(
                 statut_compte=StatutCompte.SUSPENDU
+            ).count(),
+            "litiges_en_attente": Remboursement.objects.filter(
+                statut__in=("demande", "en_examen", "approuve")
+            ).count(),
+            "signalements_ouverts": Signalement.objects.filter(
+                statut__in=(StatutSignalement.OUVERT, StatutSignalement.EN_EXAMEN)
             ).count(),
         }
 

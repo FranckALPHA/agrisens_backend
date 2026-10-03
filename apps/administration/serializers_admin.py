@@ -144,3 +144,5 @@ class CompteursAdminSerializer(serializers.Serializer):
     ingenieurs_en_attente = serializers.IntegerField()
     reinitialisations_en_attente = serializers.IntegerField()
     comptes_suspendus = serializers.IntegerField()
+    litiges_en_attente = serializers.IntegerField()
+    signalements_ouverts = serializers.IntegerField()

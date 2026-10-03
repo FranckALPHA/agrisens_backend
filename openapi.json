@@ -112,6 +112,331 @@
                 }
             }
         },
+        "/api/v1/admin/remboursements/": {
+            "get": {
+                "operationId": "admin_remboursements_list",
+                "description": "GET /admin/remboursements — file de traitement (filtrable par statut).",
+                "summary": "File des remboursements",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "statut",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre de statut"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Remboursement"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/remboursements/{identifiant}/approuver/": {
+            "post": {
+                "operationId": "admin_remboursements_approuver_create",
+                "summary": "Approuver (montant total ou partiel)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApprouverRemboursementRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApprouverRemboursementRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Remboursement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/remboursements/{identifiant}/examiner/": {
+            "post": {
+                "operationId": "admin_remboursements_examiner_create",
+                "summary": "Passer la demande en examen",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Remboursement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/remboursements/{identifiant}/executer/": {
+            "post": {
+                "operationId": "admin_remboursements_executer_create",
+                "description": "Q-26 : l'admin a effectué le renvoi hors plateforme, il enregistre la référence.",
+                "summary": "Enregistrer la référence du renvoi (approuvé → effectue)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExecuterRemboursementRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExecuterRemboursementRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Remboursement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/remboursements/{identifiant}/refuser/": {
+            "post": {
+                "operationId": "admin_remboursements_refuser_create",
+                "summary": "Refuser avec motif obligatoire",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefuserRemboursementRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefuserRemboursementRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Remboursement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/signalements/": {
+            "get": {
+                "operationId": "admin_signalements_list",
+                "summary": "File des signalements (filtrable par statut)",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "statut",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre de statut"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Signalement"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/signalements/{identifiant}/traiter/": {
+            "post": {
+                "operationId": "admin_signalements_traiter_create",
+                "summary": "Traiter un signalement (statut + décision, audit)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TraiterSignalementRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TraiterSignalementRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Signalement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/admin/utilisateurs/": {
             "get": {
                 "operationId": "admin_utilisateurs_lister",
@@ -866,6 +1191,98 @@
                 "responses": {
                     "200": {
                         "description": "Code à 6 chiffres"
+                    }
+                }
+            }
+        },
+        "/api/v1/commandes/{identifiant}/evaluation/": {
+            "get": {
+                "operationId": "commandes_evaluation_retrieve",
+                "description": "POST /commandes/{id}/evaluation — seulement si livrée, une fois (02 §2.3).",
+                "summary": "Consulter mon évaluation de cette commande",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Evaluation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Aucune évaluation"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "commandes_evaluation_create",
+                "description": "POST /commandes/{id}/evaluation — seulement si livrée, une fois (02 §2.3).",
+                "summary": "Évaluer une commande livrée (1..5)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "commandes"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EvaluationCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EvaluationCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Evaluation"
+                                }
+                            }
+                        },
+                        "description": ""
                     }
                 }
             }
@@ -3086,6 +3503,78 @@
                 }
             }
         },
+        "/api/v1/remboursements/": {
+            "post": {
+                "operationId": "remboursements_create",
+                "description": "POST /remboursements — demande de remboursement (acheteur, SPEC-05).",
+                "summary": "Demander un remboursement dans le délai paramétré",
+                "tags": [
+                    "remboursements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RemboursementCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RemboursementCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Remboursement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/remboursements/mes-demandes/": {
+            "get": {
+                "operationId": "remboursements_mes_demandes_list",
+                "description": "GET /remboursements/mes-demandes — suivi par l'acheteur.",
+                "summary": "Mes demandes de remboursement",
+                "tags": [
+                    "remboursements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Remboursement"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/sante": {
             "get": {
                 "operationId": "sante_retrieve",
@@ -3142,6 +3631,77 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/SanteReadinessErrorResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/signalements/": {
+            "post": {
+                "operationId": "signalements_create",
+                "description": "POST /signalements — tout utilisateur authentifié et actif (SPEC-10).",
+                "summary": "Signaler un problème (utilisateur, produit, commande, livraison…)",
+                "tags": [
+                    "signalements"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignalementCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignalementCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Signalement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/signalements/mes-signalements/": {
+            "get": {
+                "operationId": "signalements_mes_signalements_list",
+                "summary": "Mes signalements et leur avancement",
+                "tags": [
+                    "signalements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Signalement"
+                                    }
                                 }
                             }
                         },
@@ -3571,6 +4131,19 @@
                     "ville"
                 ]
             },
+            "ApprouverRemboursementRequest": {
+                "type": "object",
+                "description": "POST /admin/remboursements/{id}/approuver — montant total ou partiel.",
+                "properties": {
+                    "montant_accorde_fcfa": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "montant_accorde_fcfa"
+                ]
+            },
             "CatalogueProduits": {
                 "type": "object",
                 "properties": {
@@ -3596,6 +4169,18 @@
                     "taille",
                     "total"
                 ]
+            },
+            "CibleSignalementEnum": {
+                "enum": [
+                    "utilisateur",
+                    "message",
+                    "produit",
+                    "commande",
+                    "livraison",
+                    "accompagnement"
+                ],
+                "type": "string",
+                "description": "* `utilisateur` - Utilisateur\n* `message` - Message\n* `produit` - Produit\n* `commande` - Commande\n* `livraison` - Livraison\n* `accompagnement` - Accompagnement"
             },
             "CodeRemiseRequest": {
                 "type": "object",
@@ -3797,12 +4382,20 @@
                     },
                     "comptes_suspendus": {
                         "type": "integer"
+                    },
+                    "litiges_en_attente": {
+                        "type": "integer"
+                    },
+                    "signalements_ouverts": {
+                        "type": "integer"
                     }
                 },
                 "required": [
                     "comptes_suspendus",
                     "ingenieurs_en_attente",
-                    "reinitialisations_en_attente"
+                    "litiges_en_attente",
+                    "reinitialisations_en_attente",
+                    "signalements_ouverts"
                 ]
             },
             "ConnexionRequest": {
@@ -4009,6 +4602,89 @@
                 },
                 "required": [
                     "disponible"
+                ]
+            },
+            "Evaluation": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "commande": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "acheteur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "note_agriculteur": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "note_livreur": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "commentaire": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "acheteur",
+                    "commande",
+                    "commentaire",
+                    "cree_le",
+                    "id",
+                    "note_agriculteur",
+                    "note_livreur"
+                ]
+            },
+            "EvaluationCreationRequest": {
+                "type": "object",
+                "description": "POST /commandes/{id}/evaluation — 1..5, une seule fois (02 §2.3).",
+                "properties": {
+                    "note_agriculteur": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1
+                    },
+                    "note_livreur": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "nullable": true
+                    },
+                    "commentaire": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "note_agriculteur"
+                ]
+            },
+            "ExecuterRemboursementRequest": {
+                "type": "object",
+                "description": "POST /admin/remboursements/{id}/executer — référence du renvoi (Q-26).\n\nLa règle « référence non vide » vit dans le service (`reference_obligatoire`).",
+                "properties": {
+                    "reference_operateur": {
+                        "type": "string",
+                        "maxLength": 128
+                    }
+                },
+                "required": [
+                    "reference_operateur"
                 ]
             },
             "Exploitation": {
@@ -5191,6 +5867,17 @@
                     "mot_de_passe_temporaire"
                 ]
             },
+            "MotifRemboursementEnum": {
+                "enum": [
+                    "produit_endommage",
+                    "produit_incorrect",
+                    "non_recu",
+                    "annulation",
+                    "autre"
+                ],
+                "type": "string",
+                "description": "* `produit_endommage` - Produit endommagé\n* `produit_incorrect` - Produit incorrect\n* `non_recu` - Non reçu\n* `annulation` - Annulation\n* `autre` - Autre"
+            },
             "MotifRequest": {
                 "type": "object",
                 "description": "Rejet d'une commande : motif obligatoire.",
@@ -5939,6 +6626,172 @@
                     "motif"
                 ]
             },
+            "RefuserRemboursementRequest": {
+                "type": "object",
+                "description": "POST /admin/remboursements/{id}/refuser — motif obligatoire (07 §15.3).\n\nLa règle « motif non vide » vit dans le service (`motif_obligatoire`).",
+                "properties": {
+                    "motif": {
+                        "type": "string",
+                        "maxLength": 1000
+                    }
+                },
+                "required": [
+                    "motif"
+                ]
+            },
+            "Remboursement": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "commande": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "commande_reference": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "paiement": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "demandeur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "demandeur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "signalement": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "motif": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MotifRemboursementEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "montant_demande_fcfa": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "montant_accorde_fcfa": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutRemboursementEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "statut_commande_origine": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "motif_decision": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "decide_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "reference_operateur": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "justificatifs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "commande",
+                    "commande_reference",
+                    "cree_le",
+                    "decide_le",
+                    "demandeur",
+                    "demandeur_nom",
+                    "id",
+                    "justificatifs",
+                    "maj_le",
+                    "montant_accorde_fcfa",
+                    "montant_demande_fcfa",
+                    "motif",
+                    "motif_decision",
+                    "paiement",
+                    "reference_operateur",
+                    "signalement",
+                    "statut",
+                    "statut_commande_origine"
+                ]
+            },
+            "RemboursementCreationRequest": {
+                "type": "object",
+                "description": "POST /remboursements — demande de l'acheteur (SPEC-05).",
+                "properties": {
+                    "commande_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    },
+                    "motif": {
+                        "$ref": "#/components/schemas/MotifRemboursementEnum"
+                    },
+                    "montant_demande_fcfa": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "justificatifs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 36
+                        }
+                    },
+                    "signalement_id": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 1,
+                        "maxLength": 36
+                    }
+                },
+                "required": [
+                    "commande_id",
+                    "montant_demande_fcfa",
+                    "motif"
+                ]
+            },
             "ReponseMessage": {
                 "type": "object",
                 "description": "Réponse neutre uniforme (demande de réinitialisation, Q-23).",
@@ -6117,6 +6970,134 @@
                     "statut"
                 ]
             },
+            "Signalement": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "auteur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "auteur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "cible_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CibleSignalementEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "cible_id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "motif": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutSignalementEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "decision": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "traite_par": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "traite_par_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "fichiers": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "auteur",
+                    "auteur_nom",
+                    "cible_id",
+                    "cible_type",
+                    "cree_le",
+                    "decision",
+                    "description",
+                    "fichiers",
+                    "id",
+                    "maj_le",
+                    "motif",
+                    "statut",
+                    "traite_par",
+                    "traite_par_nom"
+                ]
+            },
+            "SignalementCreationRequest": {
+                "type": "object",
+                "description": "POST /signalements — cible + motif + fichiers (SPEC-10).",
+                "properties": {
+                    "cible_type": {
+                        "$ref": "#/components/schemas/CibleSignalementEnum"
+                    },
+                    "cible_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 36
+                    },
+                    "motif": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "fichier_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 36
+                        }
+                    }
+                },
+                "required": [
+                    "cible_id",
+                    "cible_type",
+                    "description",
+                    "motif"
+                ]
+            },
             "StatutCommandeEnum": {
                 "enum": [
                     "en_attente",
@@ -6159,6 +7140,29 @@
                 "type": "string",
                 "description": "* `proposee` - Proposée\n* `acceptee` - Acceptée\n* `en_cours` - En cours\n* `livree` - Livrée\n* `client_absent` - Client absent\n* `echec_livraison` - Échec de livraison\n* `annulee` - Annulée"
             },
+            "StatutRemboursementEnum": {
+                "enum": [
+                    "demande",
+                    "en_examen",
+                    "approuve",
+                    "refuse",
+                    "en_cours",
+                    "effectue",
+                    "echoue"
+                ],
+                "type": "string",
+                "description": "* `demande` - Demandé\n* `en_examen` - En examen\n* `approuve` - Approuvé\n* `refuse` - Refusé\n* `en_cours` - En cours\n* `effectue` - Effectué\n* `echoue` - Échoué"
+            },
+            "StatutSignalementEnum": {
+                "enum": [
+                    "ouvert",
+                    "en_examen",
+                    "clos_fonde",
+                    "clos_non_fonde"
+                ],
+                "type": "string",
+                "description": "* `ouvert` - Ouvert\n* `en_examen` - En examen\n* `clos_fonde` - Closé — fondé\n* `clos_non_fonde` - Closé — non fondé"
+            },
             "StatutValidationEnum": {
                 "enum": [
                     "en_attente",
@@ -6198,6 +7202,32 @@
                     "contexte",
                     "fichier"
                 ]
+            },
+            "TraiterSignalementRequest": {
+                "type": "object",
+                "description": "POST /admin/signalements/{id}/traiter — statut de décision + motif.",
+                "properties": {
+                    "statut": {
+                        "$ref": "#/components/schemas/TraiterSignalementStatutEnum"
+                    },
+                    "decision": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "statut"
+                ]
+            },
+            "TraiterSignalementStatutEnum": {
+                "enum": [
+                    "en_examen",
+                    "clos_fonde",
+                    "clos_non_fonde"
+                ],
+                "type": "string",
+                "description": "* `en_examen` - En examen\n* `clos_fonde` - Closé — fondé\n* `clos_non_fonde` - Closé — non fondé"
             },
             "TypeIncidentEnum": {
                 "enum": [

@@ -192,6 +192,7 @@ class Command(BaseCommand):
         self._produits_demo()
         self._commandes_demo()
         self._livraisons_demo()
+        self._litiges_demo()
 
     # --- Profils F-03 --------------------------------------------------------
 
@@ -445,12 +446,67 @@ class Command(BaseCommand):
 
     # --- Livraisons F-08 ---------------------------------------------------------
 
-    def _livraisons_demo(self) -> None:
-        """Une livraison proposée, une en cours, une livrée (vrais appels)."""
+    def _commande_payee(
+        self, amina: Any, paul: Any, tomates: Any, adresse: Any, quantite: str
+    ) -> Commande:
+        """Crée, accepte et paie une commande de démo (vrai webhook signé)."""
+        from apps.commandes.services import ServiceCommande
+        from apps.paiements.services import ServicePaiement
+
+        commande = ServiceCommande.creer(
+            amina,
+            lignes=[{"produit_id": str(tomates.id), "quantite": quantite}],
+            adresse_id=str(adresse.id),
+        )
+        ServiceCommande.accepter(paul, str(commande.id))
+        paiement, _, _ = ServicePaiement.initier_paiement_commande(
+            amina,
+            str(commande.id),
+            "mtn_momo",
+            None,
+            f"seed-{commande.reference}",
+            "http://localhost:5173",
+        )
+        # Webhook réussi via le vrai point d'entrée (signature valide).
+        import json as _json
+
+        from apps.paiements.passerelle import EN_TETE_SIGNATURE, signer_webhook
+
+        corps = _json.dumps(
+            {
+                "id": f"evt-seed-{paiement.reference_interne}",
+                "type": "payment.complete",
+                "data": {
+                    "reference": paiement.reference_notchpay,
+                    "merchant_reference": paiement.reference_interne,
+                    "amount": paiement.montant_fcfa,
+                },
+            }
+        ).encode()
+        statut, _ = ServicePaiement.traiter_webhook(
+            {EN_TETE_SIGNATURE: signer_webhook(corps)}, corps
+        )
+        assert statut == 200
+        return Commande.objects.get(id=commande.id)
+
+    def _livrer(self, alain: Any, paul: Any, commande: Commande) -> Commande:
+        """Course complète jusqu'à `livree` (acceptation, préparation, code)."""
         from apps.commandes.services import ServiceCommande
         from apps.livraisons.models import Livraison
         from apps.livraisons.services import ServiceLivraison, dechiffrer_code
-        from apps.paiements.services import ServicePaiement
+
+        livraison = Livraison.objects.get(commande=commande)
+        ServiceLivraison.accepter(alain, str(livraison.id))
+        ServiceCommande.preparer(paul, str(commande.id))
+        ServiceLivraison.demarrer(alain, str(livraison.id))
+        code = dechiffrer_code(Livraison.objects.get(id=livraison.id).code_remise_chiffre)
+        ServiceLivraison.confirmer_remise(alain, str(livraison.id), code)
+        return Commande.objects.get(id=commande.id)
+
+    def _livraisons_demo(self) -> None:
+        """Une livraison proposée, une en cours, une livrée (vrais appels)."""
+        from apps.livraisons.models import Livraison
+        from apps.livraisons.services import ServiceLivraison
         from apps.produits.models import Produit
         from apps.profils.models import LivreurProfil
 
@@ -475,60 +531,69 @@ class Command(BaseCommand):
             },
         )
 
-        def commander_et_payer(quantite: str) -> Commande:
-            commande = ServiceCommande.creer(
-                amina,
-                lignes=[{"produit_id": str(tomates.id), "quantite": quantite}],
-                adresse_id=str(adresse.id),
-            )
-            ServiceCommande.accepter(paul, str(commande.id))
-            paiement, _, _ = ServicePaiement.initier_paiement_commande(
-                amina,
-                str(commande.id),
-                "mtn_momo",
-                None,
-                f"seed-{commande.reference}",
-                "http://localhost:5173",
-            )
-            # Webhook réussi via le vrai point d'entrée (signature valide).
-            import json as _json
-
-            from apps.paiements.passerelle import EN_TETE_SIGNATURE, signer_webhook
-
-            corps = _json.dumps(
-                {
-                    "id": f"evt-seed-{paiement.reference_interne}",
-                    "type": "payment.complete",
-                    "data": {
-                        "reference": paiement.reference_notchpay,
-                        "merchant_reference": paiement.reference_interne,
-                        "amount": paiement.montant_fcfa,
-                    },
-                }
-            ).encode()
-            statut, _ = ServicePaiement.traiter_webhook(
-                {EN_TETE_SIGNATURE: signer_webhook(corps)}, corps
-            )
-            assert statut == 200
-            return Commande.objects.get(id=commande.id)
-
         # 1. Proposée (en attente d'un livreur).
-        commander_et_payer("4")
+        self._commande_payee(amina, paul, tomates, adresse, "4")
         # 2. En cours (Alain accepte, Paul prépare, démarrage).
-        en_cours = commander_et_payer("6")
+        en_cours = self._commande_payee(amina, paul, tomates, adresse, "6")
         livraison_cours = Livraison.objects.get(commande=en_cours)
         ServiceLivraison.accepter(alain, str(livraison_cours.id))
+        from apps.commandes.services import ServiceCommande
+
         ServiceCommande.preparer(paul, str(en_cours.id))
         ServiceLivraison.demarrer(alain, str(livraison_cours.id))
         # 3. Livrée (code réel déchiffré pour la démo).
-        livree = commander_et_payer("2")
-        livraison_finie = Livraison.objects.get(commande=livree)
-        ServiceLivraison.accepter(alain, str(livraison_finie.id))
-        ServiceCommande.preparer(paul, str(livree.id))
-        ServiceLivraison.demarrer(alain, str(livraison_finie.id))
-        code = dechiffrer_code(Livraison.objects.get(id=livraison_finie.id).code_remise_chiffre)
-        ServiceLivraison.confirmer_remise(alain, str(livraison_finie.id), code)
+        self._livrer(alain, paul, self._commande_payee(amina, paul, tomates, adresse, "2"))
         self.stdout.write("Livraisons de démonstration prêtes (proposée, en cours, livrée).")
+
+    # --- Litiges F-09 -------------------------------------------------------------
+
+    def _litiges_demo(self) -> None:
+        """Une demande de remboursement en attente + un signalement ouvert.
+
+        La commande livrée de `_livraisons_demo` reste intacte pour les E2E
+        PW-F09 (demande dans le délai de 48 h) ; ici on crée une quatrième
+        commande livrée spécifiquement en litige.
+        """
+        from apps.litiges.models import Remboursement, Signalement
+        from apps.litiges.services import ServiceRemboursement, ServiceSignalement
+        from apps.produits.models import Produit
+
+        if Remboursement.objects.exists() and Signalement.objects.exists():
+            self.stdout.write("Litiges de démonstration déjà présents.")
+            return
+        paul = Utilisateur.objects.get(telephone="+237690000001")
+        amina = Utilisateur.objects.get(telephone="+237690000002")
+        alain = Utilisateur.objects.get(telephone="+237690000007")
+        adresse = amina.adresses.filter(libelle="Domicile").first() or amina.adresses.first()
+        tomates = Produit.objects.filter(nom="Tomates", statut="disponible").first()
+        if adresse is None or tomates is None:
+            self.stdout.write("Adresse ou Tomates manquantes : litiges ignorés.")
+            return
+        if not Remboursement.objects.exists():
+            livree = self._livrer(
+                alain, paul, self._commande_payee(amina, paul, tomates, adresse, "1")
+            )
+            photo = service_fichiers.televerser(
+                proprietaire=amina,
+                contexte=ContexteFichier.JUSTIFICATIF,
+                fichier=SimpleUploadedFile(
+                    "tomates-abimees.jpg", _octets_jpeg(), content_type="image/jpeg"
+                ),
+            )
+            ServiceRemboursement.demander(
+                amina, str(livree.id), "produit_endommage", 900, [str(photo.id)]
+            )
+        if not Signalement.objects.exists():
+            ServiceSignalement.creer(
+                amina,
+                "produit",
+                str(tomates.id),
+                "photo_trompeuse",
+                "Les photos du produit ne correspondent pas à la livraison reçue.",
+            )
+        self.stdout.write(
+            "Litiges de démonstration prêts (remboursement en attente, signalement ouvert)."
+        )
 
     @staticmethod
     def _justificatifs(
