@@ -152,3 +152,46 @@ class JournalAudit(ModeleBase):
 
     def __str__(self) -> str:
         return f"Audit {self.action} sur {self.entite_type} par {self.acteur}"
+
+
+class OffreAbonnement(ModeleBase):
+    """Offre d'abonnement **versionnée** : une nouvelle ligne par modification.
+
+    Décision P-05 / D-04 : en V1 seule l'offre `gratuit` est utilisée (quotas IA),
+    les offres payantes sont enregistrées mais non vendues. Le super-admin peut
+    modifier les limites et le prix avec une `date_effet` ; la version en vigueur
+    est la ligne active de plus grande `date_effet` ≤ maintenant. La souscription
+    (ABONNEMENT) arrivera en F-17 et référencera la version exacte choisie.
+    """
+
+    code = models.CharField(
+        max_length=30,
+        db_index=True,
+        help_text="Code stable de l'offre (gratuit, standard, premium)",
+    )
+    nom = models.CharField(max_length=100)
+    prix_mensuel_fcfa = models.IntegerField(default=0)
+    quota_planning_mois = models.IntegerField(default=0)
+    quota_recommandation_mois = models.IntegerField(default=0)
+    fonctionnalites = models.JSONField(default=dict, blank=True)
+    date_effet = models.DateTimeField(default=maintenant)
+    active = models.BooleanField(default=True)
+    cree_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="offres_crees",
+    )
+
+    class Meta:
+        db_table = "offre_abonnement"
+        verbose_name = "Offre d'abonnement"
+        verbose_name_plural = "Offres d'abonnement"
+        ordering = ["code", "-date_effet"]
+        indexes = [
+            models.Index(fields=["code", "-date_effet"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.code} ({self.prix_mensuel_fcfa} FCFA)"

@@ -22,7 +22,7 @@ from commun.exceptions import (
 from commun.horloge import maintenant
 from django.db import IntegrityError, transaction
 
-from apps.administration.services import parametres
+from apps.administration.services import audit, parametres
 from apps.commandes.models import Commande, CompteurReference, StatutCommande
 from apps.commandes.services import ServiceCommande
 from apps.commandes.tarification import arrondir_fcfa
@@ -32,10 +32,11 @@ from apps.paiements.models import (
     ObjetPaiement,
     OperateurPaiement,
     Paiement,
+    Reversement,
     StatutPaiement,
 )
 from apps.paiements.passerelle import passerelle_paiement
-from apps.utilisateurs.models import RoleUtilisateur
+from apps.utilisateurs.models import RoleUtilisateur, Utilisateur
 from apps.utilisateurs.services import normaliser_telephone
 
 OPERATEURS_VALIDES = tuple(OperateurPaiement.values)
@@ -532,3 +533,204 @@ class ServicePaiement:
                         )
                     traites += 1
         return traites
+
+
+class ServiceSoldes:
+    """Calcul des soldes bénéficiaires (Q-11) — jamais stocké, toujours recalculé.
+
+    `solde = gains_acquis − remboursements_imputés − deja_reverse`.
+
+    Gains acquis à la livraison (02 §2.4) :
+      - agriculteur : sous-total − commission des commandes effectivement
+        livrées (statut `livree`, `remboursement_en_attente` ou `remboursee` :
+        la commande a été livrée puis possiblement remboursée) ;
+      - livreur : frais de livraison des livraisons `livree`, sans commission
+        (journal Q-09) ;
+      - ingénieur : consultation − commission + déplacement des accompagnements
+        `terminee` — l'accompagnement arrive en F-11, solde 0 en V1.
+
+    # Hypothèse Q-43 : l'imputation d'un remboursement est portée sur le solde de
+    # l'agriculteur vendeur de la commande remboursée (les frais de livraison déjà
+    # gagnés par le livreur ne sont pas repris). À confirmer avec le client.
+    """
+
+    # Statuts de commande où l'agriculteur a effectivement livré (donc gagné).
+    _STATUTS_LIVRES = (
+        StatutCommande.LIVREE,
+        StatutCommande.REMBOURSEMENT_EN_ATTENTE,
+        StatutCommande.REMBOURSEE,
+    )
+
+    @staticmethod
+    def _reverse_cumule(beneficiaire_id: str) -> int:
+        from django.db.models import Sum
+
+        agrégat = Reversement.objects.filter(beneficiaire_id=beneficiaire_id).aggregate(
+            total=Sum("montant_fcfa")
+        )
+        return int(agrégat["total"] or 0)
+
+    @classmethod
+    def details(cls, utilisateur: Utilisateur) -> dict[str, int]:
+        """Décompose le solde d'un bénéficiaire (agriculteur, livreur ou ingénieur).
+
+        Suit la formule 02 §2.4 : `solde = gains_acquis − remboursements_imputés
+        − deja_reverse`. Les gains sont bruts, les remboursements retranchés à part.
+        """
+        from django.db.models import Sum
+
+        gains_bruts = 0
+        remboursements = 0
+        if utilisateur.role == RoleUtilisateur.AGRICULTEUR:
+            agrégat = Commande.objects.filter(
+                agriculteur_id=utilisateur.id, statut__in=cls._STATUTS_LIVRES
+            ).aggregate(
+                total=Sum("sous_total_fcfa") - Sum("commission_fcfa", default=0)
+            )
+            gains_bruts = int(agrégat["total"] or 0)
+            # Import local : litiges dépend de paiements.models, pas de services.
+            from apps.litiges.models import Remboursement, StatutRemboursement
+
+            agrégat_r = Remboursement.objects.filter(
+                commande__agriculteur_id=utilisateur.id,
+                statut=StatutRemboursement.EFFECTUE,
+            ).aggregate(total=Sum("montant_accorde_fcfa"))
+            remboursements = int(agrégat_r["total"] or 0)
+        elif utilisateur.role == RoleUtilisateur.LIVREUR:
+            from apps.livraisons.models import Livraison, StatutLivraison
+
+            agrégat = Livraison.objects.filter(
+                livreur_id=utilisateur.id, statut=StatutLivraison.LIVREE
+            ).aggregate(total=Sum("commande__frais_livraison_fcfa"))
+            gains_bruts = int(agrégat["total"] or 0)
+        # Ingénieur : accompagnement absent en V1 (F-11), gains nuls.
+
+        deja_reverse = cls._reverse_cumule(utilisateur.id)
+        return {
+            "gains_acquis": gains_bruts,
+            "remboursements_imputes": remboursements,
+            "deja_reverse": deja_reverse,
+            "solde": gains_bruts - remboursements - deja_reverse,
+        }
+
+    @classmethod
+    def soldes_positifs(cls) -> list[dict[str, Any]]:
+        """Bénéficiaires dont le solde est strictement positif (ADM file des reversements)."""
+        roles = (
+            RoleUtilisateur.AGRICULTEUR,
+            RoleUtilisateur.LIVREUR,
+            RoleUtilisateur.INGENIEUR_AGRONOME,
+        )
+        resultats: list[dict[str, Any]] = []
+        for utilisateur in Utilisateur.objects.filter(role__in=roles).order_by("nom"):
+            details = cls.details(utilisateur)
+            if details["solde"] > 0:
+                resultats.append(
+                    {
+                        "beneficiaire_id": utilisateur.id,
+                        "nom": utilisateur.nom,
+                        "role": utilisateur.role,
+                        **details,
+                    }
+                )
+        return resultats
+
+
+class ServiceReversements:
+    """Enregistrement des reversements manuels (Q-11) et historique."""
+
+    ROLES_BENEFICIAIRES = (
+        RoleUtilisateur.AGRICULTEUR,
+        RoleUtilisateur.LIVREUR,
+        RoleUtilisateur.INGENIEUR_AGRONOME,
+    )
+
+    @classmethod
+    @transaction.atomic
+    def enregistrer(
+        cls,
+        admin: Utilisateur,
+        *,
+        beneficiaire_id: str,
+        montant_fcfa: int,
+        operateur: str,
+        reference_operateur: str,
+        note: str | None = None,
+        adresse_ip: str | None = None,
+    ) -> Reversement:
+        """POST /admin/reversements — montant ≤ solde, référence obligatoire, audit."""
+        beneficiaire = (
+            Utilisateur.objects.filter(id=beneficiaire_id).exclude(
+                statut_compte="anonymise"
+            ).first()
+        )
+        if beneficiaire is None:
+            raise NonTrouve(
+                code="ressource_introuvable",
+                message="Bénéficiaire introuvable.",
+            )
+        if beneficiaire.role not in cls.ROLES_BENEFICIAIRES:
+            raise ValidationMetier(
+                code="beneficiaire_invalide",
+                message="Le reversement concerne un agriculteur, un livreur ou un ingénieur.",
+                details={"champ": "beneficiaire_id"},
+            )
+        if montant_fcfa <= 0:
+            raise ValidationMetier(
+                code="montant_invalide",
+                message="Le montant du reversement doit être strictement positif.",
+                details={"champ": "montant_fcfa"},
+            )
+        if not (reference_operateur or "").strip():
+            raise ValidationMetier(
+                code="reference_requise",
+                message="La référence du virement opérateur est obligatoire.",
+                details={"champ": "reference_operateur"},
+            )
+
+        solde = ServiceSoldes.details(beneficiaire)["solde"]
+        if montant_fcfa > solde:
+            raise ValidationMetier(
+                code="montant_superieur_solde",
+                message=(
+                    f"Le montant demandé ({montant_fcfa} FCFA) dépasse le solde "
+                    f"disponible ({solde} FCFA)."
+                ),
+                details={"montant": montant_fcfa, "solde": solde},
+            )
+
+        reversement = Reversement.objects.create(
+            beneficiaire=beneficiaire,
+            montant_fcfa=montant_fcfa,
+            operateur=operateur,
+            reference_operateur=reference_operateur.strip(),
+            effectue_par=admin,
+            effectue_le=maintenant(),
+            note=(note or "").strip() or None,
+        )
+        audit.journaliser(
+            action="enregistrer_reversement",
+            entite_type="reversement",
+            entite_id=reversement.id,
+            acteur=admin,
+            nouvelle_valeur={
+                "beneficiaire_id": beneficiaire.id,
+                "montant_fcfa": montant_fcfa,
+                "operateur": operateur,
+                "reference_operateur": reversement.reference_operateur,
+            },
+            adresse_ip=adresse_ip,
+        )
+        return reversement
+
+    @staticmethod
+    def historique(beneficiaire_id: str | None = None):
+        queryset = Reversement.objects.select_related("beneficiaire", "effectue_par")
+        if beneficiaire_id:
+            queryset = queryset.filter(beneficiaire_id=beneficiaire_id)
+        return queryset.order_by("-effectue_le")
+
+
+# Alias d'instance réutilisable (même style que parametres/audit).
+soldes = ServiceSoldes()
+reversements = ServiceReversements()

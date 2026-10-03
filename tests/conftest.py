@@ -116,13 +116,16 @@ def _donnees_migration_garanties(request):
 
     donnees_referentiels = importlib.import_module("apps.referentiels.migrations.0002_initial_data")
     donnees_parametres = importlib.import_module("apps.administration.migrations.0002_initial_data")
-    from apps.administration.models import ParametrePlateforme
+    donnees_offres = importlib.import_module("apps.administration.migrations.0005_initial_offres")
+    from apps.administration.models import OffreAbonnement, ParametrePlateforme
     from apps.referentiels.models import Referentiel
 
     if not Referentiel.objects.exists():
         donnees_referentiels.inserer_referentiels(registre_apps, None)
     if not ParametrePlateforme.objects.exists():
         donnees_parametres.inserer_parametres(registre_apps, None)
+    if not OffreAbonnement.objects.exists():
+        donnees_offres.inserer_offres(registre_apps, None)
     yield
 
 
