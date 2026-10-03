@@ -127,6 +127,41 @@ class ErreurFournisseur(ErreurMetier):
         super().__init__(code, message, status.HTTP_502_BAD_GATEWAY, details)
 
 
+class QuotaAtteint(ErreurMetier):
+    """Quota mensuel de génération IA épuisé pour l'offre en vigueur (429).
+
+    SPEC-08 / prompt F-12 point 3 : le dépassement renvoie 429 `quota_atteint`
+    avec la limite, le nombre consommé et la date de réinitialisation (1er du
+    mois suivant UTC). Aucun tarif en dur : la limite vient d'`OFFRE_ABONNEMENT`.
+    """
+
+    def __init__(
+        self,
+        message: str = "Quota mensuel atteint.",
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(
+            "quota_atteint", message, status.HTTP_429_TOO_MANY_REQUESTS, details
+        )
+
+
+class ServiceIndisponible(ErreurMetier):
+    """Fournisseur IA momentanément indisponible ou limité (503).
+
+    SPEC-08 : après le retry prévu, une 429 persistante du fournisseur ou une
+    indisponibilité renvoie `limite_fournisseur` ; la génération est marquée
+    `echouee` et le quota n'est pas décompté.
+    """
+
+    def __init__(
+        self,
+        code: str = "limite_fournisseur",
+        message: str = "Le service IA est momentanément indisponible, réessayez plus tard.",
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(code, message, status.HTTP_503_SERVICE_UNAVAILABLE, details)
+
+
 def construire_reponse_erreur(
     code: str, message: str, statut_http: int, details: dict[str, Any] | None = None
 ) -> Response:

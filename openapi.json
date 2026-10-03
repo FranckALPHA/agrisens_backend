@@ -3217,6 +3217,193 @@
                 }
             }
         },
+        "/api/v1/exploitations/{identifiant}/plannings/": {
+            "get": {
+                "operationId": "exploitations_plannings_retrieve",
+                "description": "Réservé au propriétaire, à un ingénieur affecté et à l'admin.",
+                "summary": "Historique des générations d'une exploitation",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "taille",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "exploitations"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeGenerationsIA"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "exploitations_plannings_create",
+                "description": "En-tête `Idempotency-Key` supporté. Dépassement de quota → 429 `quota_atteint`. L'IA ne reçoit aucune donnée personnelle ; le centre est arrondi à 0,1°. Seules les générations réussies décomptent le quota.",
+                "summary": "Générer un planning cultural assisté par IA",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "test_simule",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Modes du fournisseur factice (local/test uniquement) : `normal`, `invalide`, `echec`, `timeout`. Ignoré sinon."
+                    }
+                ],
+                "tags": [
+                    "exploitations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanningCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanningCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GenerationIADetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "429": {
+                        "description": "quota_atteint"
+                    },
+                    "502": {
+                        "description": "reponse_invalide"
+                    },
+                    "503": {
+                        "description": "limite_fournisseur"
+                    }
+                }
+            }
+        },
+        "/api/v1/exploitations/{identifiant}/recommandations/": {
+            "post": {
+                "operationId": "exploitations_recommandations_create",
+                "description": "Quota séparé (`recommandation`). En-tête `Idempotency-Key` supporté ; dépassement → 429 `quota_atteint`.",
+                "summary": "Demander une recommandation agronomique à l'IA",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "test_simule",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Modes du fournisseur factice (local/test uniquement) : `normal`, `invalide`, `echec`, `timeout`. Ignoré sinon."
+                    }
+                ],
+                "tags": [
+                    "exploitations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecommandationCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecommandationCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GenerationIADetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "429": {
+                        "description": "quota_atteint"
+                    }
+                }
+            }
+        },
         "/api/v1/fichiers/": {
             "post": {
                 "operationId": "fichiers_create",
@@ -3345,6 +3532,121 @@
                     },
                     "410": {
                         "description": "url_expiree"
+                    }
+                }
+            }
+        },
+        "/api/v1/generations-ia/{identifiant}/": {
+            "get": {
+                "operationId": "generations_ia_retrieve",
+                "summary": "Détail d'une génération IA (propriétaire, ingénieur affecté, admin)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "generations-ia"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GenerationIADetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "generation_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/generations-ia/{identifiant}/corrections/": {
+            "post": {
+                "operationId": "generations_ia_corrections_create",
+                "description": "Réservé à un ingénieur affecté à un accompagnement actif de l'exploitation. Tout autre appelant reçoit 404 ; un acheteur/un livreur est refusé plus en amont (403).",
+                "summary": "Corriger une génération IA (ne mute jamais la réponse originale)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "generations-ia"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CorrectionCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CorrectionCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorrectionIA"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "generation_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/ia/quota/": {
+            "get": {
+                "operationId": "ia_quota_retrieve",
+                "summary": "Quota mensuel de générations IA (consommé / limite par type)",
+                "tags": [
+                    "ia"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
                     }
                 }
             }
@@ -6344,6 +6646,59 @@
                 "type": "string",
                 "description": "* `produit` - Photo de produit\n* `signalement` - Pièce d'un signalement\n* `accompagnement` - Fichier d'un accompagnement\n* `justificatif` - Justificatif professionnel\n* `chat` - Fichier de conversation\n* `incident` - Photo d'incident de livraison"
             },
+            "CorrectionCreationRequest": {
+                "type": "object",
+                "description": "POST /generations-ia/{id}/corrections.",
+                "properties": {
+                    "commentaire": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000
+                    },
+                    "contenu_corrige": {
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "commentaire"
+                ]
+            },
+            "CorrectionIA": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ingenieur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ingenieur_nom": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "commentaire": {
+                        "type": "string"
+                    },
+                    "contenu_corrige": {
+                        "nullable": true,
+                        "description": "Réponse complète corrigée ; peut rester null pour un simple avis."
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "commentaire",
+                    "cree_le",
+                    "id",
+                    "ingenieur",
+                    "ingenieur_nom"
+                ]
+            },
             "CreationAdminRequest": {
                 "type": "object",
                 "description": "POST /admin/utilisateurs (super-admin) — création d'un compte admin.",
@@ -6894,6 +7249,212 @@
                     "public",
                     "taille_octets",
                     "type_mime"
+                ]
+            },
+            "GenerationIADetail": {
+                "type": "object",
+                "description": "Détail complet : payload, réponse originale immuable, corrections.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TypeGenerationEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "exploitation": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "demandeur": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Agriculteur propriétaire qui a déclenché la génération."
+                    },
+                    "culture": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "periode_debut": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "periode_fin": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "entrees": {
+                        "readOnly": true,
+                        "description": "Payload exact envoyé au fournisseur IA (audit « aucune donnée personnelle », 01 §1ter). Construit par ServiceEntrees.construire()."
+                    },
+                    "reponse_originale": {
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Réponse validée par le schéma Pydantic ; jamais mutée après `reussie`."
+                    },
+                    "avertissement": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "fournisseur_ia": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "modele_ia": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "version_prompt": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutGenerationEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "erreur": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Code + message lisible si statut = `echouee`."
+                    },
+                    "mois_quota": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Clé `AAAA-MM` UTC de la génération, utilisée pour la remise à zéro mensuelle."
+                    },
+                    "cle_idempotence": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "En-tête `Idempotency-Key` de la requête POST (null si absent)."
+                    },
+                    "corrections": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CorrectionIA"
+                        },
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "avertissement",
+                    "cle_idempotence",
+                    "corrections",
+                    "cree_le",
+                    "culture",
+                    "demandeur",
+                    "entrees",
+                    "erreur",
+                    "exploitation",
+                    "fournisseur_ia",
+                    "id",
+                    "maj_le",
+                    "modele_ia",
+                    "mois_quota",
+                    "periode_debut",
+                    "periode_fin",
+                    "reponse_originale",
+                    "statut",
+                    "type",
+                    "version_prompt"
+                ]
+            },
+            "GenerationIAList": {
+                "type": "object",
+                "description": "Vue légère pour l'historique d'une exploitation.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TypeGenerationEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "statut": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StatutGenerationEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "culture": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "periode_debut": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "periode_fin": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "fournisseur_ia": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "modele_ia": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "version_prompt": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "mois_quota": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Clé `AAAA-MM` UTC de la génération, utilisée pour la remise à zéro mensuelle."
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "cree_le",
+                    "culture",
+                    "fournisseur_ia",
+                    "id",
+                    "modele_ia",
+                    "mois_quota",
+                    "periode_debut",
+                    "periode_fin",
+                    "statut",
+                    "type",
+                    "version_prompt"
                 ]
             },
             "Incident": {
@@ -7520,6 +8081,32 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/UtilisateurAdminListe"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
+            "ListeGenerationsIA": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GenerationIAList"
                         }
                     },
                     "page": {
@@ -8658,6 +9245,34 @@
                     "date_fin"
                 ]
             },
+            "PlanningCreationRequest": {
+                "type": "object",
+                "description": "POST /exploitations/{id}/plannings.",
+                "properties": {
+                    "culture": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "periode_debut": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "periode_fin": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "infos_agronomiques": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "culture",
+                    "periode_debut",
+                    "periode_fin"
+                ]
+            },
             "PositionLivreurRequest": {
                 "type": "object",
                 "description": "POST /livraisons/{id}/position — GeoJSON Point pendant la course.",
@@ -8919,6 +9534,29 @@
                 ],
                 "type": "string",
                 "description": "* `disponible` - Disponible\n* `epuise` - Épuisé\n* `retire` - Retiré"
+            },
+            "RecommandationCreationRequest": {
+                "type": "object",
+                "description": "POST /exploitations/{id}/recommandations.",
+                "properties": {
+                    "sujet": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                    },
+                    "culture": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 100
+                    },
+                    "contexte": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "sujet"
+                ]
             },
             "Referentiel": {
                 "type": "object",
@@ -9707,6 +10345,15 @@
                 "type": "string",
                 "description": "* `actif` - Actif\n* `en_attente_validation` - En attente de validation\n* `suspendu` - Suspendu\n* `anonymise` - Anonymisé"
             },
+            "StatutGenerationEnum": {
+                "enum": [
+                    "en_cours",
+                    "reussie",
+                    "echouee"
+                ],
+                "type": "string",
+                "description": "* `en_cours` - En cours\n* `reussie` - Réussie\n* `echouee` - Échouée"
+            },
             "StatutLivraisonEnum": {
                 "enum": [
                     "proposee",
@@ -9820,6 +10467,14 @@
                 ],
                 "type": "string",
                 "description": "* `en_examen` - En examen\n* `clos_fonde` - Closé — fondé\n* `clos_non_fonde` - Closé — non fondé"
+            },
+            "TypeGenerationEnum": {
+                "enum": [
+                    "planning",
+                    "recommandation"
+                ],
+                "type": "string",
+                "description": "* `planning` - Planning cultural\n* `recommandation` - Recommandation agronomique"
             },
             "TypeIncidentEnum": {
                 "enum": [
