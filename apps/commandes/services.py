@@ -432,6 +432,32 @@ class ServiceCommande:
         if commande is None:
             raise NonTrouve()
         ancien = commande.statut
+        if ancien == StatutCommande.PAYEE:
+            # Annulation après paiement : remboursement intégral à examiner
+            # (02 §3.1, F-09). Le remboursement est créé avant la transition
+            # pour que `statut_commande_origine` capture `payee`.
+            from apps.litiges.services import ServiceRemboursement
+
+            ServiceRemboursement.depuis_annulation(commande, acheteur)
+            _transition(
+                commande,
+                StatutCommande.REMBOURSEMENT_EN_ATTENTE,
+                (StatutCommande.PAYEE,),
+                acheteur,
+                "Annulation après paiement.",
+            )
+            # Hypothèse Q-42 : le stock réservé à l'acceptation est libéré,
+            # comme pour une annulation avant paiement (02/07 muets).
+            for ligne in commande.lignes.all():
+                _liberer(str(ligne.produit_id), ligne.quantite)
+            notifier(
+                commande.agriculteur,
+                "commande",
+                f"Commande {commande.reference} annulée après paiement",
+                "Un remboursement intégral est en cours d'examen par la plateforme.",
+                lien=f"/agriculteur/commandes/{commande.id}",
+            )
+            return commande
         _transition(
             commande,
             StatutCommande.ANNULEE,
@@ -539,6 +565,84 @@ class ServiceCommande:
             f"Paiement non abouti ({commande.reference})",
             f"{motif} Nouvel essai possible.",
             lien=f"/commandes/{commande.id}",
+        )
+        return commande
+
+    # --- Remboursement (F-09 : appelées par `apps/litiges/services.py`) ------
+
+    @staticmethod
+    @transaction.atomic
+    def marquer_remboursement_en_attente(commande_id: str, acteur: Any, motif: str) -> Commande:
+        """Statut éligible (livraison ou `payee`) → `remboursement_en_attente` (02 §3.1)."""
+        commande = Commande.objects.select_for_update().filter(id=commande_id).first()
+        if commande is None:
+            raise NonTrouve()
+        _transition(
+            commande,
+            StatutCommande.REMBOURSEMENT_EN_ATTENTE,
+            (
+                StatutCommande.LIVREE,
+                StatutCommande.CLIENT_ABSENT,
+                StatutCommande.ECHEC_LIVRAISON,
+                StatutCommande.PAYEE,
+            ),
+            acteur,
+            motif,
+        )
+        notifier(
+            commande.agriculteur,
+            "commande",
+            f"Commande {commande.reference} en litige",
+            "L'acheteur a demandé un remboursement ; la plateforme examine.",
+            lien=f"/agriculteur/commandes/{commande.id}",
+        )
+        return commande
+
+    @staticmethod
+    @transaction.atomic
+    def retour_apres_refus_remboursement(
+        commande_id: str, nouveau_statut: str, acteur: Any, motif: str
+    ) -> Commande:
+        """Refus du remboursement : la commande retrouve son statut d'avant la demande."""
+        commande = Commande.objects.select_for_update().filter(id=commande_id).first()
+        if commande is None:
+            raise NonTrouve()
+        _transition(
+            commande,
+            nouveau_statut,
+            (StatutCommande.REMBOURSEMENT_EN_ATTENTE,),
+            acteur,
+            motif,
+        )
+        notifier(
+            commande.acheteur,
+            "commande",
+            f"Commande {commande.reference} : remboursement refusé",
+            f"La commande est de nouveau « {commande.get_statut_display()} ».",
+            lien=f"/commandes/{commande.id}",
+        )
+        return commande
+
+    @staticmethod
+    @transaction.atomic
+    def marquer_remboursee(commande_id: str, acteur: Any, motif: str) -> Commande:
+        """`remboursement_en_attente` → `remboursee` après exécution manuelle (Q-26)."""
+        commande = Commande.objects.select_for_update().filter(id=commande_id).first()
+        if commande is None:
+            raise NonTrouve()
+        _transition(
+            commande,
+            StatutCommande.REMBOURSEE,
+            (StatutCommande.REMBOURSEMENT_EN_ATTENTE,),
+            acteur,
+            motif,
+        )
+        notifier(
+            commande.agriculteur,
+            "commande",
+            f"Commande {commande.reference} remboursée",
+            "Le remboursement a été effectué par la plateforme.",
+            lien=f"/agriculteur/commandes/{commande.id}",
         )
         return commande
 
