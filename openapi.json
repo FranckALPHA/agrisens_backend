@@ -6,6 +6,148 @@
         "description": "API REST AgriSens (Django 5.2 LTS + DRF + MySQL spatial). Mise en relation d'agriculteurs, acheteurs, ingénieurs et livreurs au Cameroun."
     },
     "paths": {
+        "/api/v1/admin/audit/": {
+            "get": {
+                "operationId": "admin_audit_retrieve",
+                "description": "Filtres : acteur, entité, action, période (debut/fin ISO).",
+                "summary": "Consulter le journal d'audit",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "acteur",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Identifiant de l'acteur"
+                    },
+                    {
+                        "in": "query",
+                        "name": "action",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Action journalisée"
+                    },
+                    {
+                        "in": "query",
+                        "name": "debut",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début (ISO 8601)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "entite_type",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Type d'entité auditée"
+                    },
+                    {
+                        "in": "query",
+                        "name": "fin",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin (ISO 8601)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Page de résultats (défaut 1)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "taille",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Taille de page, 1–100 (défaut 20)"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeAudit"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/audit/export/": {
+            "get": {
+                "operationId": "admin_audit_export_retrieve",
+                "description": "Mêmes filtres que la liste ; export sans pagination.",
+                "summary": "Exporter l'audit en CSV",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "acteur",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "action",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "debut",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "entite_type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "fin",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fichier CSV"
+                    }
+                }
+            }
+        },
         "/api/v1/admin/ingenieurs/{id}/refuser/": {
             "post": {
                 "operationId": "admin_ingenieurs_refuser_create",
@@ -108,6 +250,494 @@
                     },
                     "409": {
                         "description": "transition_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/offres/": {
+            "get": {
+                "operationId": "admin_offres_list",
+                "description": "GET /admin/offres (adm lecture) ; POST (sadm) — nouvelle version d'offre.",
+                "summary": "Lister les offres d'abonnement versionnées",
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OffreAdmin"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "admin_offres_create",
+                "description": "Réservé au super-admin. Les versions précédentes restent en base ; la nouvelle version s'applique aux nouveaux abonnements (P-05).",
+                "summary": "Enregistrer une nouvelle version d'offre",
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OffreCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OffreCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OffreAdmin"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "403": {
+                        "description": "permission_refusee"
+                    },
+                    "422": {
+                        "description": "prix_invalide | quota_invalide"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/parametres/": {
+            "get": {
+                "operationId": "admin_parametres_list",
+                "description": "Chaque paramètre du registre avec sa valeur en vigueur, ses bornes et ses valeurs planifiées. Lecture seule pour l'admin.",
+                "summary": "Lister les paramètres (admin)",
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ParametreAdmin"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/parametres/{cle}/": {
+            "post": {
+                "operationId": "admin_parametres_create",
+                "description": "Bornes vérifiées, motif obligatoire, date d'effet immédiate ou future. Chaque changement crée une nouvelle ligne (02 §2.8) et une entrée d'audit.",
+                "summary": "Définir une nouvelle valeur de paramètre",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cle",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-z_]+(?:\\.[a-z_0-9]+)+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "cle",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Clé du paramètre (groupe.nom)"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ParametreCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ParametreCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ParametreHistorique"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "403": {
+                        "description": "permission_refusee"
+                    },
+                    "404": {
+                        "description": "parametre_inconnu"
+                    },
+                    "422": {
+                        "description": "valeur_hors_bornes"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/parametres/{cle}/historique/": {
+            "get": {
+                "operationId": "admin_parametres_historique_list",
+                "description": "GET /admin/parametres/{cle}/historique — toutes les lignes (sadm).",
+                "summary": "Historique d'un paramètre",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cle",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-z_]+(?:\\.[a-z_0-9]+)+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "cle",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Clé du paramètre"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ParametreHistorique"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "parametre_inconnu"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/parametres/{cle}/restaurer/": {
+            "post": {
+                "operationId": "admin_parametres_restaurer_create",
+                "description": "Restaurer = créer une nouvelle ligne avec l'ancienne valeur (02 §2.8).",
+                "summary": "Restaurer la valeur précédente d'un paramètre",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cle",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-z_]+(?:\\.[a-z_0-9]+)+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "cle",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Clé du paramètre"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ParametreHistorique"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "parametre_inconnu"
+                    },
+                    "422": {
+                        "description": "restauration_impossible"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/referentiels/{type_ref}/": {
+            "get": {
+                "operationId": "admin_referentiels_list",
+                "description": "Toutes les entrées d'un type, actifs et inactifs.",
+                "summary": "Lister un référentiel (gestion)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "type_ref",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "type_ref",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ReferentielAdmin"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "422": {
+                        "description": "type_referentiel_inconnu"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "admin_referentiels_create",
+                "description": "/admin/referentiels/{type} — liste de gestion (sadm) + ajout.",
+                "summary": "Ajouter une entrée de référentiel",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "type_ref",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReferentielAdminRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReferentielAdminRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReferentielAdmin"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "description": "code_existant"
+                    },
+                    "422": {
+                        "description": "type_referentiel_inconnu | champ_requis"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/referentiels/entrees/{id}/": {
+            "put": {
+                "operationId": "admin_referentiels_entrees_update",
+                "description": "Le code stable ne change jamais ; l'ancien libellé est audité.",
+                "summary": "Renommer le libellé d'une entrée",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReferentielRenommageRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReferentielRenommageRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReferentielAdmin"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "referentiel_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/referentiels/entrees/{id}/desactiver/": {
+            "post": {
+                "operationId": "admin_referentiels_entrees_desactiver_create",
+                "description": "L'entrée reste en base (un code utilisé ne se supprime jamais) ; elle disparaît des formulaires.",
+                "summary": "Désactiver une entrée de référentiel",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReferentielAdmin"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "referentiel_introuvable"
+                    },
+                    "409": {
+                        "description": "deja_desactive"
                     }
                 }
             }
@@ -346,6 +976,105 @@
                 }
             }
         },
+        "/api/v1/admin/reversements/": {
+            "get": {
+                "operationId": "admin_reversements_retrieve",
+                "description": "GET/POST /admin/reversements — historique et enregistrement (adm).",
+                "summary": "Historique des reversements",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "beneficiaire",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtre par identifiant bénéficiaire"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Page de résultats (défaut 1)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "taille",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Taille de page, 1–100 (défaut 20)"
+                    }
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeReversements"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "admin_reversements_create",
+                "description": "Montant ≤ solde disponible, référence opérateur obligatoire, audit systématique. Le paiement sort du circuit NotchPay (Q-11).",
+                "summary": "Enregistrer un reversement manuel",
+                "tags": [
+                    "admin"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReversementCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReversementCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Reversement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "ressource_introuvable"
+                    },
+                    "422": {
+                        "description": "montant_invalide | reference_requise | montant_superieur_solde | beneficiaire_invalide"
+                    }
+                }
+            }
+        },
         "/api/v1/admin/signalements/": {
             "get": {
                 "operationId": "admin_signalements_list",
@@ -429,6 +1158,36 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Signalement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/soldes/": {
+            "get": {
+                "operationId": "admin_soldes_list",
+                "description": "File de travail pour les reversements manuels (Q-11).",
+                "summary": "Soldes positifs à reverser",
+                "tags": [
+                    "admin"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SoldeLigne"
+                                    }
                                 }
                             }
                         },
@@ -3710,6 +4469,33 @@
                 }
             }
         },
+        "/api/v1/soldes/moi/": {
+            "get": {
+                "operationId": "soldes_moi_retrieve",
+                "description": "Décomposition du solde (Q-11) : gains acquis, remboursements imputés, déjà reversé, solde disponible. Jamais stocké, recalculé.",
+                "summary": "Consulter son solde de gains",
+                "tags": [
+                    "soldes"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SoldeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/utilisateurs/moi/": {
             "get": {
                 "operationId": "utilisateurs_moi_retrieve",
@@ -4142,6 +4928,50 @@
                 },
                 "required": [
                     "montant_accorde_fcfa"
+                ]
+            },
+            "AuditEntree": {
+                "type": "object",
+                "description": "Ligne du journal d'audit, détaillée pour l'admin (ancienne/nouvelle).",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "action": {
+                        "type": "string"
+                    },
+                    "entite_type": {
+                        "type": "string"
+                    },
+                    "entite_id": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "acteur_nom": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "ancienne_valeur": {
+                        "nullable": true
+                    },
+                    "nouvelle_valeur": {
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "acteur_nom",
+                    "action",
+                    "ancienne_valeur",
+                    "cree_le",
+                    "entite_id",
+                    "entite_type",
+                    "id",
+                    "nouvelle_valeur"
                 ]
             },
             "CatalogueProduits": {
@@ -5455,6 +6285,32 @@
                     "quantite"
                 ]
             },
+            "ListeAudit": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditEntree"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
             "ListeCommandes": {
                 "type": "object",
                 "properties": {
@@ -5540,6 +6396,32 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/Notification"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
+            "ListeReversements": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Reversement"
                         }
                     },
                     "page": {
@@ -5964,6 +6846,91 @@
                 "type": "string",
                 "description": "* `commande` - Commande\n* `abonnement` - Abonnement\n* `accompagnement` - Accompagnement"
             },
+            "OffreAdmin": {
+                "type": "object",
+                "description": "GET /admin/offres — version en vigueur + versions historiques par code.",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "nom": {
+                        "type": "string"
+                    },
+                    "prix_mensuel_fcfa": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "quota_planning_mois": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "quota_recommandation_mois": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "fonctionnalites": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "versions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VersionOffre"
+                        }
+                    }
+                },
+                "required": [
+                    "code",
+                    "nom",
+                    "prix_mensuel_fcfa",
+                    "quota_planning_mois",
+                    "quota_recommandation_mois",
+                    "versions"
+                ]
+            },
+            "OffreCreationRequest": {
+                "type": "object",
+                "description": "POST /admin/offres — nouvelle version d'une offre existante ou nouvelle.",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 30
+                    },
+                    "nom": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    },
+                    "prix_mensuel_fcfa": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "quota_planning_mois": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "quota_recommandation_mois": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "fonctionnalites": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "date_effet": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "code",
+                    "nom",
+                    "prix_mensuel_fcfa",
+                    "quota_planning_mois",
+                    "quota_recommandation_mois"
+                ]
+            },
             "OperateurPaiementEnum": {
                 "enum": [
                     "mtn_momo",
@@ -6076,6 +7043,103 @@
                 ],
                 "type": "string",
                 "description": "* `initie` - Initié\n* `en_attente` - En attente\n* `reussi` - Réussi\n* `echoue` - Échoué\n* `expire` - Expiré"
+            },
+            "ParametreAdmin": {
+                "type": "object",
+                "description": "Ligne ADM-04 : un paramètre avec sa valeur en vigueur et ses bornes.",
+                "properties": {
+                    "cle": {
+                        "type": "string"
+                    },
+                    "groupe": {
+                        "type": "string"
+                    },
+                    "valeur": {
+                        "type": "integer"
+                    },
+                    "minimum": {
+                        "type": "integer"
+                    },
+                    "maximum": {
+                        "type": "integer"
+                    },
+                    "public": {
+                        "type": "boolean"
+                    },
+                    "planifiees": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ValeurPlanifiee"
+                        }
+                    }
+                },
+                "required": [
+                    "cle",
+                    "groupe",
+                    "maximum",
+                    "minimum",
+                    "planifiees",
+                    "public",
+                    "valeur"
+                ]
+            },
+            "ParametreCreationRequest": {
+                "type": "object",
+                "description": "POST /admin/parametres/{cle} — valeur, date d'effet, motif obligatoire.",
+                "properties": {
+                    "valeur": {
+                        "type": "integer"
+                    },
+                    "date_effet": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "motif": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "motif",
+                    "valeur"
+                ]
+            },
+            "ParametreHistorique": {
+                "type": "object",
+                "description": "Historique d'un paramètre (02 §2.8 : une ligne par changement).",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "valeur": {
+                        "type": "integer"
+                    },
+                    "date_effet": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "motif": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "auteur_nom": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "auteur_nom",
+                    "cree_le",
+                    "date_effet",
+                    "id",
+                    "motif",
+                    "valeur"
+                ]
             },
             "PatchedAdresseModificationRequest": {
                 "type": "object",
@@ -6613,6 +7677,78 @@
                     "libelle"
                 ]
             },
+            "ReferentielAdmin": {
+                "type": "object",
+                "description": "Ligne de gestion : code stable + libellé + drapeau actif.\n\nLe champ `type` est porteur à la lecture ; à l'écriture il vient de l'URL\n(/admin/referentiels/{type}), donc non obligatoire dans le corps.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "libelle": {
+                        "type": "string"
+                    },
+                    "ordre": {
+                        "type": "integer",
+                        "default": 0
+                    },
+                    "actif": {
+                        "type": "boolean",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "actif",
+                    "code",
+                    "id",
+                    "libelle"
+                ]
+            },
+            "ReferentielAdminRequest": {
+                "type": "object",
+                "description": "Ligne de gestion : code stable + libellé + drapeau actif.\n\nLe champ `type` est porteur à la lecture ; à l'écriture il vient de l'URL\n(/admin/referentiels/{type}), donc non obligatoire dans le corps.",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "code": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "libelle": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "ordre": {
+                        "type": "integer",
+                        "default": 0
+                    }
+                },
+                "required": [
+                    "code",
+                    "libelle"
+                ]
+            },
+            "ReferentielRenommageRequest": {
+                "type": "object",
+                "properties": {
+                    "libelle": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "libelle"
+                ]
+            },
             "RefusIngenieurRequest": {
                 "type": "object",
                 "description": "POST /admin/ingenieurs/{id}/refuser — presence de `motif` documentée ;\nle contrôle métier (motif non vide → 422 `motif_obligatoire`) reste dans\nle service, seul point de vérité (conventions §3).",
@@ -6886,6 +8022,95 @@
                     }
                 }
             },
+            "Reversement": {
+                "type": "object",
+                "description": "Ligne d'historique de reversement (route admin seule : référence visible).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "beneficiaire_id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "beneficiaire_nom": {
+                        "type": "string"
+                    },
+                    "montant_fcfa": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "operateur": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/OperateurPaiementEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "reference_operateur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "effectue_par_nom": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "effectue_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "note": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "beneficiaire_id",
+                    "beneficiaire_nom",
+                    "effectue_le",
+                    "id",
+                    "montant_fcfa",
+                    "note",
+                    "operateur",
+                    "reference_operateur"
+                ]
+            },
+            "ReversementCreationRequest": {
+                "type": "object",
+                "description": "POST /admin/reversements — bénéficiaire, montant, opérateur, référence.",
+                "properties": {
+                    "beneficiaire_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "montant_fcfa": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "operateur": {
+                        "$ref": "#/components/schemas/OperateurPaiementEnum"
+                    },
+                    "reference_operateur": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                    },
+                    "note": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "beneficiaire_id",
+                    "montant_fcfa",
+                    "operateur",
+                    "reference_operateur"
+                ]
+            },
             "RoleAdministrationEnum": {
                 "enum": [
                     "admin",
@@ -7096,6 +8321,66 @@
                     "cible_type",
                     "description",
                     "motif"
+                ]
+            },
+            "SoldeDetail": {
+                "type": "object",
+                "description": "GET /soldes/moi — décomposition du solde (02 §2.4, jamais stocké).",
+                "properties": {
+                    "gains_acquis": {
+                        "type": "integer"
+                    },
+                    "remboursements_imputes": {
+                        "type": "integer"
+                    },
+                    "deja_reverse": {
+                        "type": "integer"
+                    },
+                    "solde": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "deja_reverse",
+                    "gains_acquis",
+                    "remboursements_imputes",
+                    "solde"
+                ]
+            },
+            "SoldeLigne": {
+                "type": "object",
+                "description": "GET /admin/soldes — un bénéficiaire au solde positif.",
+                "properties": {
+                    "beneficiaire_id": {
+                        "type": "string"
+                    },
+                    "nom": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "gains_acquis": {
+                        "type": "integer"
+                    },
+                    "remboursements_imputes": {
+                        "type": "integer"
+                    },
+                    "deja_reverse": {
+                        "type": "integer"
+                    },
+                    "solde": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "beneficiaire_id",
+                    "deja_reverse",
+                    "gains_acquis",
+                    "nom",
+                    "remboursements_imputes",
+                    "role",
+                    "solde"
                 ]
             },
             "StatutCommandeEnum": {
@@ -7504,6 +8789,60 @@
                     "role",
                     "statut_compte",
                     "telephone"
+                ]
+            },
+            "ValeurPlanifiee": {
+                "type": "object",
+                "description": "Planification d'une valeur à date d'effet future.",
+                "properties": {
+                    "valeur": {
+                        "type": "integer"
+                    },
+                    "date_effet": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "motif": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "date_effet",
+                    "motif",
+                    "valeur"
+                ]
+            },
+            "VersionOffre": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "prix_mensuel_fcfa": {
+                        "type": "integer"
+                    },
+                    "quota_planning_mois": {
+                        "type": "integer"
+                    },
+                    "quota_recommandation_mois": {
+                        "type": "integer"
+                    },
+                    "date_effet": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "active",
+                    "date_effet",
+                    "id",
+                    "prix_mensuel_fcfa",
+                    "quota_planning_mois",
+                    "quota_recommandation_mois"
                 ]
             }
         },

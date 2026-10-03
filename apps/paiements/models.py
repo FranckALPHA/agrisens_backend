@@ -73,6 +73,50 @@ class Paiement(ModeleBase):
         return f"{self.reference_interne} ({self.statut})"
 
 
+class Reversement(ModeleBase):
+    """Versement manuel d'un solde à un bénéficiaire (Q-11, 02 §2.4).
+
+    L'admin effectue le virement Mobile Money **hors plateforme** puis enregistre
+    ici la référence opérateur. Le solde est calculé (jamais stocké) par le
+    service `soldes` ; un reversement ne peut excéder le solde disponible au
+    moment de l'enregistrement. Aucun montant en dur, argent en entiers FCFA.
+    """
+
+    beneficiaire = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="reversements",
+    )
+    montant_fcfa = models.IntegerField()
+    operateur = models.CharField(max_length=20, choices=OperateurPaiement.choices)
+    reference_operateur = models.CharField(max_length=128)
+    effectue_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reversements_enregistres",
+    )
+    effectue_le = models.DateTimeField()
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "reversement"
+        ordering = ["-effectue_le"]
+        indexes = [
+            models.Index(fields=["beneficiaire"], name="reversement_benef_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(montant_fcfa__gt=0),
+                name="reversement_montant_positif",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Reversement {self.montant_fcfa} FCFA → {self.beneficiaire_id}"
+
+
 class EvenementWebhook(ModeleBase):
     fournisseur = models.CharField(max_length=30)
     identifiant_externe = models.CharField(max_length=128, unique=True)

@@ -10,6 +10,10 @@ locales / test / e2e — jamais en production (prompt F-02 point 8).
 
 F-03 point 5 : profils de Nadia (en attente, avec justificatifs),
 de Clarisse (ingénieure validée) et de Jean (livreur).
+
+F-10 : un historique de paramètre, un reversement d'exemple et les
+offres d'abonnement (déjà insérées par la migration) pour que les
+écrans d'administration ne soient pas vides en démonstration.
 """
 
 import io
@@ -193,6 +197,7 @@ class Command(BaseCommand):
         self._commandes_demo()
         self._livraisons_demo()
         self._litiges_demo()
+        self._administration_demo()
 
     # --- Profils F-03 --------------------------------------------------------
 
@@ -594,6 +599,47 @@ class Command(BaseCommand):
         self.stdout.write(
             "Litiges de démonstration prêts (remboursement en attente, signalement ouvert)."
         )
+
+    # --- Administration F-10 ----------------------------------------------------
+
+    def _administration_demo(self) -> None:
+        """Historique de paramètre + reversement d'exemple pour les écrans ADM.
+
+        Le tarif au km reste à sa valeur de démarrage (150 FCFA) : les
+        scénarios E2E PW-F10-01/02 partent de cette valeur. On insère une
+        ligne d'historique « confirmée » et un reversement à Alain (livreur
+        des livraisons de démo) pour que l'audit et la liste des reversements
+        ne soient pas vides, sans entamer le solde de Paul (PW-F10-06/07).
+        """
+        from apps.administration.models import ParametrePlateforme
+        from apps.administration.services import parametres
+        from apps.paiements.models import OperateurPaiement, Reversement
+        from apps.paiements.services import reversements, soldes
+
+        sadm = Utilisateur.objects.get(telephone="+237690000000")
+        mireille = Utilisateur.objects.get(telephone="+237690000005")
+        alain = Utilisateur.objects.get(telephone="+237690000007")
+
+        if not ParametrePlateforme.objects.filter(cle="livraison.tarif_km_fcfa").exists():
+            parametres.definir(
+                "livraison.tarif_km_fcfa",
+                150,
+                auteur=sadm,
+                motif="Valeur initiale confirmée lors de la revue des tarifs (démo).",
+            )
+
+        if not Reversement.objects.exists():
+            solde_alain = soldes.details(alain)["solde"]
+            if solde_alain > 0:
+                reversements.enregistrer(
+                    mireille,
+                    beneficiaire_id=str(alain.id),
+                    montant_fcfa=min(1000, solde_alain),
+                    operateur=OperateurPaiement.MTN_MOMO,
+                    reference_operateur="MTN-DEMO-000001",
+                    note="Reversement d'exemple (démonstration).",
+                )
+        self.stdout.write("Données de démonstration administration prêtes (F-10).")
 
     @staticmethod
     def _justificatifs(

@@ -12,6 +12,15 @@ from apps.administration.views import (
     VueReinitialiserMotDePasse,
     VueSuspendreUtilisateur,
 )
+from apps.administration.views_f10 import (
+    VueAdminAudit,
+    VueAdminAuditExport,
+    VueAdminOffres,
+    VueAdminParametreCle,
+    VueAdminParametreHistorique,
+    VueAdminParametreRestaurer,
+    VueAdminParametres,
+)
 
 app_name = "administration"
 
@@ -57,4 +66,30 @@ urlpatterns = [
         VueReinitialiserMotDePasse.as_view(),
         name="admin_utilisateurs_reset_mdp",
     ),
+    # Paramètres (SPEC-11, prompt F-10 point 1) — sous-routes avant la clé générique
+    re_path(
+        r"^admin/parametres/(?P<cle>[a-z_]+(?:\.[a-z_0-9]+)+)/historique/?$",
+        VueAdminParametreHistorique.as_view(),
+        name="admin_parametres_historique",
+    ),
+    re_path(
+        r"^admin/parametres/(?P<cle>[a-z_]+(?:\.[a-z_0-9]+)+)/restaurer/?$",
+        VueAdminParametreRestaurer.as_view(),
+        name="admin_parametres_restaurer",
+    ),
+    re_path(
+        r"^admin/parametres/(?P<cle>[a-z_]+(?:\.[a-z_0-9]+)+)/?$",
+        VueAdminParametreCle.as_view(),
+        name="admin_parametres_cle",
+    ),
+    re_path(
+        r"^admin/parametres/?$",
+        VueAdminParametres.as_view(),
+        name="admin_parametres_liste",
+    ),
+    # Offres d'abonnement versionnées (F-10 point 2)
+    re_path(r"^admin/offres/?$", VueAdminOffres.as_view(), name="admin_offres"),
+    # Audit (F-10 point 4) — export avant la liste simple
+    re_path(r"^admin/audit/export/?$", VueAdminAuditExport.as_view(), name="admin_audit_export"),
+    re_path(r"^admin/audit/?$", VueAdminAudit.as_view(), name="admin_audit"),
 ]
