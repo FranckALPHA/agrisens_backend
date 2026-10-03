@@ -151,6 +151,7 @@ INSTALLED_APPS = [
     "apps.livraisons.apps.LivraisonsConfig",
     "apps.litiges.apps.LitigesConfig",
     "apps.accompagnements.apps.AccompagnementsConfig",
+    "apps.plannings.apps.PlanningsConfig",
 ]
 
 MIDDLEWARE = [
@@ -254,6 +255,8 @@ SPECTACULAR_SETTINGS = {
         "MotifRemboursementEnum": "apps.litiges.models.MotifRemboursement",
         "CibleSignalementEnum": "apps.litiges.models.CibleSignalement",
         "StatutSignalementEnum": "apps.litiges.models.StatutSignalement",
+        "TypeGenerationEnum": "apps.plannings.models.TypeGeneration",
+        "StatutGenerationEnum": "apps.plannings.models.StatutGeneration",
     },
 }
 

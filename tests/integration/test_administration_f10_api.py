@@ -190,8 +190,10 @@ def test_changement_tarif_commande_garde_ancien_calcul(
 
     # L'audit montre l'ancienne et la nouvelle valeur (E2E-12).
     entree = JournalAudit.objects.filter(action="modifier_parametre").latest("cree_le")
-    assert entree.ancienne_valeur["valeur"] == 150
-    assert entree.nouvelle_valeur["valeur"] == 200
+    ancienne = entree.ancienne_valeur or {}
+    nouvelle = entree.nouvelle_valeur or {}
+    assert ancienne["valeur"] == 150
+    assert nouvelle["valeur"] == 200
 
 
 @pytest.mark.integration

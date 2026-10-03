@@ -229,6 +229,7 @@ def test_remboursement_impute_solde_agriculteur(fabrique_utilisateur: Any) -> No
     amina = fabrique_utilisateur(role="acheteur")
     commande = _commande_livree(paul, amina, sous_total=10_000, commission=500, frais=0)
     paiement = commande.paiements.first()
+    assert paiement is not None
     Remboursement.objects.create(
         paiement=paiement,
         commande=commande,
@@ -265,6 +266,7 @@ def test_nouvelle_version_offre_versionne_et_audit(fabrique_utilisateur: Any) ->
         quota_recommandation_mois=ancien_plafond,
     )
     courante = offres.en_vigueur("gratuit")
+    assert courante is not None
     assert courante.quota_planning_mois == 3
     # L'ancienne version reste conservée (désactivée).
     assert courante.id != avant.id

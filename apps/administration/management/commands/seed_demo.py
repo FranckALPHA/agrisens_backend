@@ -34,6 +34,13 @@ from apps.exploitations.models import Exploitation
 from apps.exploitations.services import creer
 from apps.fichiers.models import ContexteFichier
 from apps.fichiers.services import service_fichiers
+from apps.plannings.models import (
+    CorrectionIA,
+    GenerationIA,
+    StatutGeneration,
+    TypeGeneration,
+)
+from apps.plannings.prompts import PROMPT_PLANNING_V1
 from apps.produits.models import Produit
 from apps.profils.models import (
     IngenieurProfil,
@@ -208,6 +215,7 @@ class Command(BaseCommand):
         self._livraisons_demo()
         self._litiges_demo()
         self._administration_demo()
+        self._plannings_demo()
 
     # --- Profils F-03 --------------------------------------------------------
 
@@ -656,6 +664,109 @@ class Command(BaseCommand):
                     note="Reversement d'exemple (démonstration).",
                 )
         self.stdout.write("Données de démonstration administration prêtes (F-10).")
+
+    # --- Plannings IA F-12 --------------------------------------------------
+
+    def _plannings_demo(self) -> None:
+        """Une génération IA réussie (planning tomate) + une correction de Nadia.
+
+        Alimente PW-F12-01 (AGR-07 affiche un planning, son historique et
+        l'avertissement) et PW-F12-02 (ING-05 montre proposition IA et corrigé
+        côte à côte). Écriture ORM directe : le seed n'emprunte pas le chemin
+        permission du service. Réponse conforme au schéma `PlanningResult`.
+        """
+        paul = Utilisateur.objects.get(telephone="+237690000001")
+        nadia = Utilisateur.objects.get(telephone="+237690000003")
+        champ = Exploitation.objects.filter(agriculteur=paul, nom="Champ Nord").first()
+        if champ is None:
+            self.stdout.write("Pas de Champ Nord : plannings de démonstration ignorés.")
+            return
+
+        centre = champ.centre
+        lat = round(centre.y, 1) if centre is not None else 3.848
+        lon = round(centre.x, 1) if centre is not None else 11.502
+        debut = maintenant().date()
+        fin = (
+            debut.replace(year=debut.year + 1)
+            if debut.month == 12
+            else debut.replace(month=debut.month + 1)
+        )
+        periode: dict[str, str] = {"debut": debut.isoformat(), "fin": fin.isoformat()}
+        entrees: dict[str, Any] = {
+            "culture": "tomate",
+            "sol": champ.type_sol,
+            "superficie_m2": int(champ.superficie_ha * 10000),
+            "periode": periode,
+            "region": champ.region,
+            "centre": {"lat": lat, "lon": lon},
+            "infos_agronomiques": None,
+        }
+        t1 = debut
+        t2 = debut.replace(month=min(debut.month + 1, 12))
+        t3 = debut.replace(month=min(debut.month + 2, 12))
+        reponse = {
+            "culture": "tomate",
+            "resume": "Planning cultural indicatif de la tomate sur le Champ Nord.",
+            "avertissement": (
+                "Ceci est une recommandation générée par une IA, pas un "
+                "diagnostic agronomique. Faites valider par un ingénieur."
+            ),
+            "etapes": [
+                {
+                    "date_debut": t1.isoformat(),
+                    "date_fin": t2.isoformat(),
+                    "activite": "Semis en pépinière",
+                    "details": "Préparer les planches, semer en lignes, arroser matin et soir.",
+                    "intrants": ["semences de tomate", "compost"],
+                },
+                {
+                    "date_debut": t2.isoformat(),
+                    "date_fin": t3.isoformat(),
+                    "activite": "Plantation et entretien",
+                    "details": "Repiquer les plants, tuteurer, sarcler et fertiliser.",
+                    "intrants": ["engrais NPK", "tuteurs"],
+                },
+                {
+                    "date_debut": t3.isoformat(),
+                    "date_fin": debut.replace(year=debut.year + 1).isoformat(),
+                    "activite": "Récolte",
+                    "details": "Récolter aux heures fraîches, trier et conditionner.",
+                    "intrants": ["paniers de récolte"],
+                },
+            ],
+            "risques": ["mildiou en saison humide", "manque d'eau en saison sèche"],
+            "conseils": ["Installer un paillage pour limiter l'évaporation."],
+        }
+        generation, cree = GenerationIA.objects.update_or_create(
+            type=TypeGeneration.PLANNING,
+            exploitation=champ,
+            demandeur=paul,
+            statut=StatutGeneration.REUSSIE,
+            mois_quota=maintenant().strftime("%Y-%m"),
+            defaults={
+                "culture": "tomate",
+                "periode_debut": periode["debut"],
+                "periode_fin": periode["fin"],
+                "entrees": entrees,
+                "reponse_originale": reponse,
+                "fournisseur_ia": "factice",
+                "modele_ia": "factice",
+                "version_prompt": PROMPT_PLANNING_V1,
+                "erreur": None,
+                "cle_idempotence": None,
+            },
+        )
+        if cree:
+            CorrectionIA.objects.create(
+                generation=generation,
+                ingenieur=nadia,
+                commentaire=(
+                    "Planning cohérent. Prévoir un paillage dès la plantation et "
+                    "surveiller le mildiou en saison humide."
+                ),
+                contenu_corrige=None,
+            )
+        self.stdout.write("Plannings de démonstration prêts (F-12 : génération + correction).")
 
     @staticmethod
     def _justificatifs(

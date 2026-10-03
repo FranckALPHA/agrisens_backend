@@ -21,6 +21,7 @@ dependencies = [
     "python-json-logger",
     "pillow",
     "filetype",
+    "pydantic>=2.13.5",
 ]
 
 [dependency-groups]
