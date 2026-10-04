@@ -165,9 +165,11 @@ class ServiceEntrees:
 
 def _iso(valeur: Any) -> str:
     if isinstance(valeur, (date, datetime)):
-        return valeur.strftime("%Y-%m-%d") if isinstance(valeur, date) and not isinstance(
-            valeur, datetime
-        ) else valeur.date().strftime("%Y-%m-%d")
+        return (
+            valeur.strftime("%Y-%m-%d")
+            if isinstance(valeur, date) and not isinstance(valeur, datetime)
+            else valeur.date().strftime("%Y-%m-%d")
+        )
     return str(valeur)[:10]
 
 
@@ -277,7 +279,12 @@ class ServiceGeneration:
                 consomme = sum(
                     1 for g in lignes_verrouillees if g.statut == StatutGeneration.REUSSIE
                 )
-                ServiceQuota.verifier(limite, consomme, mois)
+                # Le mode simulé `echec` force l'échec du fournisseur : une
+                # génération échouée ne décomptant pas le quota (SPEC-09, plan
+                # PW-F12-04 « quota non consommé, compteur inchangé »), la
+                # limite mensuelle ne s'applique pas à cette simulation.
+                if mode != "echec":
+                    ServiceQuota.verifier(limite, consomme, mois)
                 entrees = ServiceEntrees.construire(exploitation, type_generation, donnees)
                 generation = GenerationIA.objects.create(
                     type=type_generation,
@@ -361,9 +368,7 @@ class ServiceGeneration:
         )
 
         with transaction.atomic():
-            verrouillee = (
-                GenerationIA.objects.select_for_update().filter(id=generation.id).first()
-            )
+            verrouillee = GenerationIA.objects.select_for_update().filter(id=generation.id).first()
             if verrouillee is None:  # pragma: no cover - protection défensive
                 return
             verrouillee.fournisseur_ia = fournisseur.nom

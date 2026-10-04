@@ -192,6 +192,40 @@ def test_webhook_reussi_paie_fige_commission_notifie_publie(
 
 
 @pytest.mark.integration
+@pytest.mark.django_db
+def test_webhook_identifiant_long_deborde_pas_verrou_mysql(
+    client_authentifie, commande_acceptee
+) -> None:
+    """Régression : `GET_LOCK` est borné à 64 caractères côté MySQL.
+
+    Un `id` d'événement très long (référence + UUID fournisseur ou préfixe
+    de test) ne doit plus faire lever l'erreur MySQL 4163 et échouer le
+    webhook en 500 ; la clé de verrou est dérivée par empreinte courte.
+    """
+    amina = commande_acceptee["amina"]
+    commande = commande_acceptee["commande"]
+    init = _initier(amina, commande["id"], "cle-long-1")
+    reference = init.json()["reference_interne"]
+    montant = init.json()["montant_fcfa"]
+
+    corps = json.dumps(
+        {
+            "id": f"evt-{reference}-e2e-{'0' * 40}-{'1' * 20}",
+            "type": "payment.complete",
+            "data": {
+                "reference": f"FCT-{reference}",
+                "merchant_reference": reference,
+                "amount": montant,
+                "currency": "XAF",
+            },
+        }
+    ).encode("utf-8")
+    reponse = _poster_webhook(amina, corps)
+    assert reponse.status_code == 200, reponse.data
+    assert Commande.objects.get(id=commande["id"]).statut == StatutCommande.PAYEE
+
+
+@pytest.mark.integration
 @pytest.mark.django_db(transaction=True)
 def test_webhook_avant_retour_navigateur_et_double_envoi(
     client_authentifie, commande_acceptee

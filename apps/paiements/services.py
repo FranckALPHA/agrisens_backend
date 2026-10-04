@@ -5,6 +5,7 @@ navigateur ne change jamais aucun statut. Les transitions de commandes
 restent dans `apps/commandes/services.py` (pas de cycle d'imports).
 """
 
+import hashlib
 import json
 import secrets
 from datetime import timedelta
@@ -305,10 +306,15 @@ class ServicePaiement:
         # se sérialisent sur un verrou nommé MySQL : le second constate le
         # traitement du premier au lieu d'attendre un verrou de ligne
         # (timeout 1205) puis d'échouer en 500.
+        # GET_LOCK est limité à 64 caractères : l'identifiant d'événement
+        # complet peut être long (préfixe + référence + UUID côté tests ou
+        # fournisseur) et dépasserait la borne, ce qui lève une erreur MySQL
+        # 4163 non gérée. On dérive une clé courte et stable (SHA-256).
         from django.db import connection as _connexion
 
+        nom_verrou = f"agrisens:wh:{hashlib.sha256(str(identifiant).encode()).hexdigest()[:44]}"
         with _connexion.cursor() as _curseur:
-            _curseur.execute("SELECT GET_LOCK(%s, 15)", [f"agrisens:webhook:{identifiant}"])
+            _curseur.execute("SELECT GET_LOCK(%s, 15)", [nom_verrou])
             verrou = (_curseur.fetchone() or [0])[0]
         if verrou != 1:
             return 200, {"statut": "recu"}
@@ -318,7 +324,7 @@ class ServicePaiement:
             )
         finally:
             with _connexion.cursor() as _curseur:
-                _curseur.execute("SELECT RELEASE_LOCK(%s)", [f"agrisens:webhook:{identifiant}"])
+                _curseur.execute("SELECT RELEASE_LOCK(%s)", [nom_verrou])
 
     @staticmethod
     def _traiter_sous_verrou(
@@ -596,9 +602,7 @@ class ServiceSoldes:
         if utilisateur.role == RoleUtilisateur.AGRICULTEUR:
             agrégat = Commande.objects.filter(
                 agriculteur_id=utilisateur.id, statut__in=cls._STATUTS_LIVRES
-            ).aggregate(
-                total=Sum("sous_total_fcfa") - Sum("commission_fcfa", default=0)
-            )
+            ).aggregate(total=Sum("sous_total_fcfa") - Sum("commission_fcfa", default=0))
             gains_bruts = int(agrégat["total"] or 0)
             # Import local : litiges dépend de paiements.models, pas de services.
             from apps.litiges.models import Remboursement, StatutRemboursement
@@ -692,9 +696,9 @@ class ServiceReversements:
     ) -> Reversement:
         """POST /admin/reversements — montant ≤ solde, référence obligatoire, audit."""
         beneficiaire = (
-            Utilisateur.objects.filter(id=beneficiaire_id).exclude(
-                statut_compte="anonymise"
-            ).first()
+            Utilisateur.objects.filter(id=beneficiaire_id)
+            .exclude(statut_compte="anonymise")
+            .first()
         )
         if beneficiaire is None:
             raise NonTrouve(

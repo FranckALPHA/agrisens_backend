@@ -73,9 +73,7 @@ def test_schema_planning_valide() -> None:
 
 def test_schema_planning_invalide_sans_etapes() -> None:
     with pytest.raises(ValidationError):
-        PlanningResult.model_validate(
-            {"culture": "tomate", "avertissement": "a", "etapes": []}
-        )
+        PlanningResult.model_validate({"culture": "tomate", "avertissement": "a", "etapes": []})
 
 
 def test_schema_recommandation_priorites() -> None:
@@ -83,9 +81,7 @@ def test_schema_recommandation_priorites() -> None:
         {
             "sujet": "fertilisation",
             "avertissement": "a",
-            "recommandations": [
-                {"titre": "t", "detail": "d", "priorite": "haute"}
-            ],
+            "recommandations": [{"titre": "t", "detail": "d", "priorite": "haute"}],
         }
     )
     assert ok.recommandations[0].priorite == "haute"
@@ -94,9 +90,7 @@ def test_schema_recommandation_priorites() -> None:
             {
                 "sujet": "x",
                 "avertissement": "a",
-                "recommandations": [
-                    {"titre": "t", "detail": "d", "priorite": "critique"}
-                ],
+                "recommandations": [{"titre": "t", "detail": "d", "priorite": "critique"}],
             }
         )
 
@@ -167,8 +161,7 @@ def test_fournisseur_factice_normal_conforme() -> None:
     resultat = factice.generer(
         systeme="s",
         utilisateur=(
-            '{"culture": "tomate", '
-            '"periode": {"debut": "2026-01-01", "fin": "2026-06-01"}}'
+            '{"culture": "tomate", "periode": {"debut": "2026-01-01", "fin": "2026-06-01"}}'
         ),
         schema=schema_pour("planning"),
         delai_s=5,
@@ -327,6 +320,33 @@ def test_depassement_quota_leve_429(fabrique_utilisateur: Any) -> None:
     assert exc.value.details["limite"] == 2
     assert exc.value.details["consomme"] == 2
     assert "date_reinitialisation" in exc.value.details
+
+
+@pytest.mark.django_db
+def test_quota_epuise_simulation_echec_toujours_autorisee(fabrique_utilisateur: Any) -> None:
+    """PW-F12-04 : une génération simulée en échec ne décompte pas le quota,
+    elle reste donc possible même quota mensuel atteint (pas de 429)."""
+    from apps.exploitations.services import creer as creer_exploitation
+
+    from tests.unit.test_exploitations import polygone_yaounde
+
+    agri = fabrique_utilisateur(role="agriculteur")
+    exploitation = creer_exploitation(
+        agri, nom="Champ SE", parcelle=polygone_yaounde(), type_sol="argileux", region="centre"
+    )
+    donnees = {
+        "culture": "tomate",
+        "periode_debut": date(2026, 1, 1),
+        "periode_fin": date(2026, 4, 1),
+    }
+    # Quota gratuit (2/mois) entièrement consommé par deux réussies.
+    ServiceGeneration.generer(agri, exploitation, type_generation="planning", donnees=donnees)
+    ServiceGeneration.generer(agri, exploitation, type_generation="planning", donnees=donnees)
+    generation = ServiceGeneration.generer(
+        agri, exploitation, type_generation="planning", donnees=donnees, mode="echec"
+    )
+    assert generation.statut == StatutGeneration.ECHOUEE
+    assert ServiceQuota.consomme(generation.mois_quota, agri, TypeGeneration.PLANNING) == 2
 
 
 @pytest.mark.django_db

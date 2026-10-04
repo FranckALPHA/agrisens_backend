@@ -216,6 +216,7 @@ class Command(BaseCommand):
         self._litiges_demo()
         self._administration_demo()
         self._plannings_demo()
+        self._conversations_demo()
 
     # --- Profils F-03 --------------------------------------------------------
 
@@ -767,6 +768,104 @@ class Command(BaseCommand):
                 contenu_corrige=None,
             )
         self.stdout.write("Plannings de démonstration prêts (F-12 : génération + correction).")
+
+    # --- Conversations / chat F-13 -----------------------------------------
+
+    def _conversations_demo(self) -> None:
+        """Une conversation commande Amina↔Paul et une accompagnement Paul↔Nadia.
+
+        Écriture ORM directe (le seed n'emprunte pas le contrôle de partie du
+        service). Sert PW-F13-01 (réception temps réel), PW-F13-05 (historique
+        long, curseur `avant`) et PW-F13-07 (tiers sans lien → 404). Idempotent.
+        """
+        from apps.accompagnements.models import Accompagnement, Modalite, StatutAccompagnement
+        from apps.conversations.models import Conversation, Message, Participant, TypeConversation
+
+        paul = Utilisateur.objects.get(telephone="+237690000001")
+        amina = Utilisateur.objects.get(telephone="+237690000002")
+        nadia = Utilisateur.objects.get(telephone="+237690000003")
+        champ = Exploitation.objects.filter(agriculteur=paul, nom="Champ Nord").first()
+
+        # 1. Conversation rattachée à une commande Amina↔Paul.
+        commande = (
+            Commande.objects.filter(acheteur=amina, agriculteur=paul).order_by("-cree_le").first()
+        )
+        if commande is not None:
+            conversation, _ = Conversation.objects.get_or_create(
+                commande=commande, defaults={"type": TypeConversation.COMMANDE}
+            )
+            for partie in (amina, paul):
+                Participant.objects.get_or_create(conversation=conversation, utilisateur=partie)
+            piece = service_fichiers.televerser(
+                proprietaire=amina,
+                contexte=ContexteFichier.CHAT,
+                fichier=SimpleUploadedFile(
+                    "photo-reception.jpg", _octets_jpeg(), content_type="image/jpeg"
+                ),
+            )
+            echanges = [
+                (amina, "seed-f13-cmd-1", "Bonjour Paul, mes tomates sont-elles prêtes ?", None),
+                (paul, "seed-f13-cmd-2", "Bonjour Amina, oui, disponibles cette semaine.", None),
+                (
+                    amina,
+                    "seed-f13-cmd-3",
+                    "Super, je vous envoie une photo de ma commande.",
+                    piece,
+                ),
+            ]
+            for auteur, id_client, texte, fichier in echanges:
+                Message.objects.get_or_create(
+                    auteur=auteur,
+                    id_client=id_client,
+                    defaults={
+                        "conversation": conversation,
+                        "contenu": texte,
+                        "fichier": fichier,
+                    },
+                )
+
+        # 2. Conversation rattachée à un accompagnement Paul↔Nadia.
+        if champ is not None:
+            accompagnement = (
+                Accompagnement.objects.filter(agriculteur=paul, ingenieur=nadia)
+                .order_by("-cree_le")
+                .first()
+            )
+            if accompagnement is None:
+                accompagnement = Accompagnement.objects.create(
+                    agriculteur=paul,
+                    exploitation=champ,
+                    ingenieur=nadia,
+                    modalite=Modalite.EN_LIGNE,
+                    motif="Conseil sur la culture de la tomate",
+                    description="Demande de suivi agronomique (démonstration F-13).",
+                    # Statut `terminee` (hors ensemble actif acceptee/planifiee/
+                    # manquee) : ancre la conversation de démonstration sans
+                    # accorder d'accès permanent à l'exploitation ni occuper de
+                    # créneau, ce qui fausserait les cas F-11 (accès pendant
+                    # accompagnement actif, conflit de créneau, distance max).
+                    statut=StatutAccompagnement.TERMINEE,
+                )
+            conversation_accomp, _ = Conversation.objects.get_or_create(
+                accompagnement=accompagnement,
+                defaults={"type": TypeConversation.ACCOMPAGNEMENT},
+            )
+            for partie in (paul, nadia):
+                Participant.objects.get_or_create(
+                    conversation=conversation_accomp, utilisateur=partie
+                )
+            Message.objects.get_or_create(
+                auteur=nadia,
+                id_client="seed-f13-acc-1",
+                defaults={
+                    "conversation": conversation_accomp,
+                    "contenu": "Bonjour Paul, j'ai examiné votre Champ Nord.",
+                    "fichier": None,
+                },
+            )
+        self.stdout.write(
+            "Conversations de démonstration prêtes (F-13 : commande et accompagnement)."
+        )
 
     @staticmethod
     def _justificatifs(

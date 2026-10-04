@@ -22,12 +22,14 @@ dependencies = [
     "pillow",
     "filetype",
     "pydantic>=2.13.5",
+    "channels[daphne]",
 ]
 
 [dependency-groups]
 dev = [
     "pytest",
     "pytest-django",
+    "pytest-asyncio",
     "pytest-cov",
     "ruff",
     "mypy",
@@ -68,6 +70,7 @@ ignore_errors = true
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 testpaths = ["tests"]
 addopts = "--reuse-db"
+asyncio_mode = "auto"
 markers = [
     "unit: tests rapides, sans base de données",
     "integration: tests nécessitant MySQL (base agrisens_test)",

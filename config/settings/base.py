@@ -127,6 +127,9 @@ URL_SIGNEE_SECRET = env.str("URL_SIGNEE_SECRET")
 
 # --- Applications installées ---
 INSTALLED_APPS = [
+    # Daphne en tête : remplace `runserver` par le serveur ASGI (HTTP +
+    # WebSocket), requis pour le chat temps réel de F-13.
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -137,6 +140,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
+    "channels",
     # Applications AgriSens
     "apps.utilisateurs.apps.UtilisateursConfig",
     "apps.administration.apps.AdministrationConfig",
@@ -152,6 +156,7 @@ INSTALLED_APPS = [
     "apps.litiges.apps.LitigesConfig",
     "apps.accompagnements.apps.AccompagnementsConfig",
     "apps.plannings.apps.PlanningsConfig",
+    "apps.conversations.apps.ConversationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -186,6 +191,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
+
+# --- Temps réel (F-13) ---
+# Couche de canaux en mémoire : une seule instance du serveur en V1 (le
+# déploiement multi-instances ou Redis est à traiter en V2, journal Q-46).
+CHANNEL_LAYERS = {
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+}
+
+# Cache en mémoire pour les tickets WebSocket à usage unique (valables 30 s).
+# Doit rester dans le même processus que le serveur ASGI en V1 (Q-46e).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "agrisens-temps-reel",
+    }
+}
+
+# Battement du canal WebSocket, en secondes (le client coupe si un trou
+# dépasse ~2x cette valeur).
+WS_BATTEMENT_S = env.int("WS_BATTEMENT_S", default=25)
+WS_TICKET_DUREE_S = env.int("WS_TICKET_DUREE_S", default=30)
 
 # --- Internationalisation et Heure ---
 LANGUAGE_CODE = "fr"
@@ -257,6 +283,7 @@ SPECTACULAR_SETTINGS = {
         "StatutSignalementEnum": "apps.litiges.models.StatutSignalement",
         "TypeGenerationEnum": "apps.plannings.models.TypeGeneration",
         "StatutGenerationEnum": "apps.plannings.models.StatutGeneration",
+        "TypeConversationEnum": "apps.conversations.models.TypeConversation",
     },
 }
 
