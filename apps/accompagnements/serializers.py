@@ -12,6 +12,7 @@ from apps.accompagnements.models import (
     Modalite,
     StatutAccompagnement,
 )
+from apps.paiements.models import OperateurPaiement
 
 
 class DevisCreationSerializer(serializers.Serializer):
@@ -62,7 +63,8 @@ class PlanifierSerializer(serializers.Serializer):
 class ConfirmerSerializer(serializers.Serializer):
     """POST /{id}/confirmer — l'agriculteur accepte le montant et paie."""
 
-    operateur = serializers.ChoiceField(choices=(("mtn_momo", "MTN"), ("orange_money", "Orange")))
+    # Choix unique `OperateurPaiement` (F-14 : supprime la collision d'enum OpenAPI).
+    operateur = serializers.ChoiceField(choices=OperateurPaiement.choices)
     telephone = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
 
@@ -97,9 +99,7 @@ class AccompagnementSerializer(serializers.ModelSerializer):
     """Lecture publique d'un accompagnement (liste + détail)."""
 
     agriculteur_nom = serializers.CharField(source="agriculteur.nom", read_only=True)
-    ingenieur_nom = serializers.CharField(
-        source="ingenieur.nom", read_only=True, allow_null=True
-    )
+    ingenieur_nom = serializers.CharField(source="ingenieur.nom", read_only=True, allow_null=True)
     exploitation_nom = serializers.CharField(
         source="exploitation.nom", read_only=True, allow_null=True
     )

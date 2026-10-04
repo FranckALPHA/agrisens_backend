@@ -475,7 +475,9 @@ def test_gardes_roles_remboursements(
         format="json",
     )
     assert refus.status_code == 403
-    verifier_garde_route(f"{API}/remboursements/mes-demandes", roles_autorises=["acheteur"])
+    verifier_garde_route(
+        f"{API}/remboursements/mes-demandes", roles_autorises=["acheteur", "agriculteur"]
+    )
     verifier_garde_route(f"{API}/admin/remboursements", roles_autorises=["admin", "super_admin"])
     verifier_garde_route(f"{API}/admin/signalements", roles_autorises=["admin", "super_admin"])
     assert client_api.get(f"{API}/signalements/mes-signalements").status_code == 401

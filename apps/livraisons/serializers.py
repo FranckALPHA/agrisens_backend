@@ -5,6 +5,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.livraisons.models import IncidentLivraison, Livraison, TypeIncident
+from apps.paiements.models import OperateurPaiement
 
 
 class ItineraireSerializer(serializers.Serializer):
@@ -147,8 +148,9 @@ class ReprogrammerSerializer(serializers.Serializer):
     """Reprogrammation : nouvelle adresse optionnelle + paiement si frais dus."""
 
     adresse_id = serializers.CharField(required=False, allow_null=True, default=None)
+    # Choix unique `OperateurPaiement` (F-14 : supprime la collision d'enum OpenAPI).
     operateur = serializers.ChoiceField(
-        choices=[("mtn_momo", "MTN"), ("orange_money", "Orange")],
+        choices=OperateurPaiement.choices,
         required=False,
         allow_null=True,
         default=None,

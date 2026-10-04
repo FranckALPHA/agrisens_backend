@@ -33,13 +33,34 @@ def notifier(
             message=f"Type de notification inconnu : « {type} ».",
             details={"champ": "type", "valeurs_autorisees": list(TypeNotification.values)},
         )
-    return Notification.objects.create(
+    notification = Notification.objects.create(
         destinataire=destinataire,
         type=type,
         titre=titre[:150],
         contenu=(contenu or "")[:500],
         lien=lien[:500] if lien else None,
     )
+    # F-13 : la notification est poussée en temps réel sur le canal WebSocket du
+    # destinataire, en plus de sa ligne en base. Best effort (hypothèse Q-46c) :
+    # si la couche de canaux est indisponible, `publier` avale l'erreur et le
+    # polling HTTP de la cloche sert de secours — la notification reste en base.
+    from apps.conversations.consommateurs import publier
+
+    publier(
+        destinataire.id,
+        {
+            "type": "notification.nouvelle",
+            "donnees": {
+                "id": notification.id,
+                "type": notification.type,
+                "titre": notification.titre,
+                "contenu": notification.contenu,
+                "lien": notification.lien,
+                "cree_le": notification.cree_le.isoformat(),
+            },
+        },
+    )
+    return notification
 
 
 def marquer_lue(notification: Notification) -> Notification:

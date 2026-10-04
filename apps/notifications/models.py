@@ -20,6 +20,7 @@ class TypeNotification(models.TextChoices):
     ABONNEMENT = "abonnement", "Abonnement"
     ADMINISTRATION = "administration", "Administration"
     SIGNALEMENT = "signalement", "Signalement"
+    CHAT = "chat", "Chat"
 
 
 class Notification(ModeleBase):

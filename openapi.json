@@ -2311,6 +2311,82 @@
                 }
             }
         },
+        "/api/v1/blocages/": {
+            "post": {
+                "operationId": "blocages_create",
+                "description": "Un blocage empêche tout échange de messages entre les deux comptes (Q-15).",
+                "summary": "Bloquer un utilisateur",
+                "tags": [
+                    "blocages"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BlocageCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BlocageCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Blocage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/blocages/{utilisateur_id}/": {
+            "delete": {
+                "operationId": "blocages_destroy",
+                "description": "DELETE /blocages/{utilisateur_id} — débloque un utilisateur.",
+                "summary": "Débloquer un utilisateur",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "utilisateur_id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "blocages"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Débloqué"
+                    },
+                    "404": {
+                        "description": "aucun blocage actif"
+                    }
+                }
+            }
+        },
         "/api/v1/commandes/": {
             "post": {
                 "operationId": "commandes_create",
@@ -2923,6 +2999,276 @@
                             }
                         },
                         "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/conversations/": {
+            "get": {
+                "operationId": "conversations_list",
+                "description": "GET/POST /conversations — liste des siennes, ouverture/obtention.",
+                "summary": "Lister ses conversations",
+                "tags": [
+                    "conversations"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListeConversations"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "conversations_create",
+                "description": "Exige exactement un rattachement : `commande_id` ou `accompagnement_id`. L'appelant doit être une partie de la relation, sinon 404. Une seule conversation par relation (Q-46a).",
+                "summary": "Ouvrir ou obtenir une conversation",
+                "tags": [
+                    "conversations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConversationCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConversationCreationRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Conversation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/conversations/{id}/": {
+            "get": {
+                "operationId": "conversations_retrieve",
+                "description": "GET /conversations/{id} — détail d'une conversation participante.",
+                "summary": "Obtenir une conversation",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "conversations"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Conversation"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "conversation_introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/conversations/{id}/lu/": {
+            "post": {
+                "operationId": "conversations_lu_create",
+                "description": "POST /conversations/{id}/lu — pointe le dernier message lu (accusé).",
+                "summary": "Marquer les messages comme lus",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "conversations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarquerLuRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarquerLuRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/conversations/{id}/messages/": {
+            "get": {
+                "operationId": "conversations_messages_list",
+                "description": "GET/POST /conversations/{id}/messages — historique et envoi.",
+                "summary": "Lister les messages d'une conversation",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "avant",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Curseur : id du message le plus ancien déjà vu"
+                    },
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "conversations"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Message"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "conversation_introuvable"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "conversations_messages_create",
+                "description": "`id_client` (UUID) requis et idempotent : un renvoi après reconnexion ne crée jamais de doublon. `contenu` et/ou `fichier_id` obligatoire, sinon 422 `message_vide`. Si un participant a bloqué l'autre, 403 `blocage_actif` (Q-15). Le `contenu` est stocké en texte brut.",
+                "summary": "Envoyer un message",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "conversations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MessageCreationRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MessageCreationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Message"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "403": {
+                        "description": "blocage_actif"
+                    },
+                    "422": {
+                        "description": "message_vide"
                     }
                 }
             }
@@ -5200,7 +5546,7 @@
         "/api/v1/remboursements/mes-demandes/": {
             "get": {
                 "operationId": "remboursements_mes_demandes_list",
-                "description": "GET /remboursements/mes-demandes — suivi par l'acheteur.",
+                "description": "GET /remboursements/mes-demandes — suivi par le demandeur (acheteur ou agriculteur, F-11).",
                 "summary": "Mes demandes de remboursement",
                 "tags": [
                     "remboursements"
@@ -5381,6 +5727,214 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/SoldeDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/statistiques/mes-accompagnements/": {
+            "get": {
+                "operationId": "statistiques_mes_accompagnements",
+                "summary": "Statistiques d'accompagnements de l'ingénieur connecté",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MesAccompagnements"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/statistiques/mes-livraisons/": {
+            "get": {
+                "operationId": "statistiques_mes_livraisons",
+                "summary": "Statistiques de livraisons du livreur connecté",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MesLivraisons"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/statistiques/mes-ventes/": {
+            "get": {
+                "operationId": "statistiques_mes_ventes",
+                "summary": "Statistiques de ventes de l'agriculteur connecté",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MesVentes"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/statistiques/plateforme/": {
+            "get": {
+                "operationId": "statistiques_plateforme",
+                "summary": "Statistiques globales de la plateforme (admin / super-admin)",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Plateforme"
                                 }
                             }
                         },
@@ -5692,6 +6246,34 @@
                     }
                 }
             }
+        },
+        "/api/v1/ws/ticket/": {
+            "post": {
+                "operationId": "ws_ticket_create",
+                "description": "Émet un ticket jetable stocké au cache, à passer en query string (`/ws?ticket=…`) pour authentifier le canal. Le consumer le consomme à la connexion puis l'invalide.",
+                "summary": "Demander un ticket WebSocket",
+                "tags": [
+                    "ws"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -5760,7 +6342,7 @@
                     "statut": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Statut86dEnum"
+                                "$ref": "#/components/schemas/StatutAccompagnementEnum"
                             }
                         ],
                         "readOnly": true
@@ -5969,7 +6551,7 @@
                     "statut": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Statut86dEnum"
+                                "$ref": "#/components/schemas/StatutAccompagnementEnum"
                             }
                         ],
                         "readOnly": true
@@ -6330,6 +6912,47 @@
                     "nouvelle_valeur"
                 ]
             },
+            "Blocage": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "bloqueur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "bloque": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "bloque",
+                    "bloqueur",
+                    "cree_le",
+                    "id"
+                ]
+            },
+            "BlocageCreationRequest": {
+                "type": "object",
+                "description": "POST /blocages — l'utilisateur à bloquer.",
+                "properties": {
+                    "utilisateur_id": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "utilisateur_id"
+                ]
+            },
             "CatalogueProduits": {
                 "type": "object",
                 "properties": {
@@ -6603,7 +7226,7 @@
                 "description": "POST /{id}/confirmer — l'agriculteur accepte le montant et paie.",
                 "properties": {
                     "operateur": {
-                        "$ref": "#/components/schemas/Operateur370Enum"
+                        "$ref": "#/components/schemas/OperateurPaiementEnum"
                     },
                     "telephone": {
                         "type": "string",
@@ -6645,6 +7268,79 @@
                 ],
                 "type": "string",
                 "description": "* `produit` - Photo de produit\n* `signalement` - Pièce d'un signalement\n* `accompagnement` - Fichier d'un accompagnement\n* `justificatif` - Justificatif professionnel\n* `chat` - Fichier de conversation\n* `incident` - Photo d'incident de livraison"
+            },
+            "Conversation": {
+                "type": "object",
+                "description": "Conversation enrichie de son autre participant et de ses non-lus.\n\n`autre_participant` et `non_lus` dépendent de l'utilisateur qui consulte :\nils sont injectés via le `context[\"utilisateur\"]` par la vue/le service.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TypeConversationEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "commande": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "accompagnement": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "autre_participant": {
+                        "readOnly": true
+                    },
+                    "non_lus": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "dernier_message": {
+                        "readOnly": true
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "maj_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "accompagnement",
+                    "autre_participant",
+                    "commande",
+                    "cree_le",
+                    "dernier_message",
+                    "id",
+                    "maj_le",
+                    "non_lus",
+                    "type"
+                ]
+            },
+            "ConversationCreationRequest": {
+                "type": "object",
+                "description": "POST /conversations — exactement un de `commande_id` / `accompagnement_id`.",
+                "properties": {
+                    "commande_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "accompagnement_id": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
             },
             "CorrectionCreationRequest": {
                 "type": "object",
@@ -8074,6 +8770,32 @@
                     "total"
                 ]
             },
+            "ListeConversations": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Conversation"
+                        }
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "taille": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "elements",
+                    "page",
+                    "taille",
+                    "total"
+                ]
+            },
             "ListeDemandesReinitialisation": {
                 "type": "object",
                 "properties": {
@@ -8443,6 +9165,19 @@
                     "zone"
                 ]
             },
+            "MarquerLuRequest": {
+                "type": "object",
+                "description": "POST /conversations/{id}/lu — pointe le dernier message lu du participant.",
+                "properties": {
+                    "dernier_message_lu_id": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "dernier_message_lu_id"
+                ]
+            },
             "MarquerManqueRequest": {
                 "type": "object",
                 "description": "POST /{id}/marquer-manque — qui est absent (Q-30).",
@@ -8453,6 +9188,80 @@
                 },
                 "required": [
                     "absent"
+                ]
+            },
+            "MesAccompagnements": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "nombre_accompagnements": {
+                        "type": "integer"
+                    },
+                    "accompagnements_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "terminees": {
+                        "type": "integer"
+                    },
+                    "revenu_net_fcfa": {
+                        "type": "integer"
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "accompagnements_par_statut",
+                    "nombre_accompagnements",
+                    "periode",
+                    "revenu_net_fcfa",
+                    "serie",
+                    "terminees"
+                ]
+            },
+            "MesLivraisons": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "nombre_livraisons": {
+                        "type": "integer"
+                    },
+                    "livraisons_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "livrees": {
+                        "type": "integer"
+                    },
+                    "frais_cumules_fcfa": {
+                        "type": "integer"
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "frais_cumules_fcfa",
+                    "livraisons_par_statut",
+                    "livrees",
+                    "nombre_livraisons",
+                    "periode",
+                    "serie"
                 ]
             },
             "MesProduits": {
@@ -8479,6 +9288,132 @@
                     "page",
                     "taille",
                     "total"
+                ]
+            },
+            "MesVentes": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "nombre_ventes": {
+                        "type": "integer"
+                    },
+                    "chiffre_affaires_brut_fcfa": {
+                        "type": "integer"
+                    },
+                    "commissions_fcfa": {
+                        "type": "integer"
+                    },
+                    "revenu_net_fcfa": {
+                        "type": "integer"
+                    },
+                    "quantite_totale": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "produits_populaires": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProduitPopulaire"
+                        }
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "chiffre_affaires_brut_fcfa",
+                    "commissions_fcfa",
+                    "nombre_ventes",
+                    "periode",
+                    "produits_populaires",
+                    "quantite_totale",
+                    "revenu_net_fcfa",
+                    "serie"
+                ]
+            },
+            "Message": {
+                "type": "object",
+                "description": "Message rendu au client. `contenu` est du **texte brut** ; le client le\nrend échappé (React) — aucune exécution de script (PW-F13-04).",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "conversation": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "auteur": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "id_client": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Identifiant client (UUID) : clé d'idempotence, unique par auteur."
+                    },
+                    "contenu": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Texte brut ; rendu comme du texte côté client (aucune exécution de script)."
+                    },
+                    "fichier": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Fichier"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "supprime_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Soft delete ; null = message visible."
+                    },
+                    "cree_le": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "auteur",
+                    "contenu",
+                    "conversation",
+                    "cree_le",
+                    "fichier",
+                    "id",
+                    "id_client",
+                    "supprime_le"
+                ]
+            },
+            "MessageCreationRequest": {
+                "type": "object",
+                "description": "POST /conversations/{id}/messages — `id_client` requis (idempotence).",
+                "properties": {
+                    "contenu": {
+                        "type": "string"
+                    },
+                    "fichier_id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "id_client": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                    }
+                },
+                "required": [
+                    "id_client"
                 ]
             },
             "ModaliteEnum": {
@@ -8582,7 +9517,7 @@
                             }
                         ],
                         "readOnly": true,
-                        "description": "Catégorie affichée dans FE-05\n\n* `commande` - Commande\n* `paiement` - Paiement\n* `livraison` - Livraison\n* `accompagnement` - Accompagnement\n* `abonnement` - Abonnement\n* `administration` - Administration\n* `signalement` - Signalement"
+                        "description": "Catégorie affichée dans FE-05\n\n* `commande` - Commande\n* `paiement` - Paiement\n* `livraison` - Livraison\n* `accompagnement` - Accompagnement\n* `abonnement` - Abonnement\n* `administration` - Administration\n* `signalement` - Signalement\n* `chat` - Chat"
                     },
                     "titre": {
                         "type": "string",
@@ -8724,14 +9659,6 @@
                     "quota_planning_mois",
                     "quota_recommandation_mois"
                 ]
-            },
-            "Operateur370Enum": {
-                "enum": [
-                    "mtn_momo",
-                    "orange_money"
-                ],
-                "type": "string",
-                "description": "* `mtn_momo` - MTN\n* `orange_money` - Orange"
             },
             "OperateurPaiementEnum": {
                 "enum": [
@@ -9111,6 +10038,19 @@
                     }
                 }
             },
+            "Periode": {
+                "type": "object",
+                "properties": {
+                    "du": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "au": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            },
             "PhotoAjout": {
                 "type": "object",
                 "description": "POST /produits/{id}/photos — rattache un fichier déjà téléversé.",
@@ -9271,6 +10211,111 @@
                     "culture",
                     "periode_debut",
                     "periode_fin"
+                ]
+            },
+            "Plateforme": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "utilisateurs_par_role": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_utilisateurs": {
+                        "type": "integer"
+                    },
+                    "commandes_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_commandes": {
+                        "type": "integer"
+                    },
+                    "chiffre_affaires_fcfa": {
+                        "type": "integer"
+                    },
+                    "remboursements": {
+                        "$ref": "#/components/schemas/Remboursements"
+                    },
+                    "livraisons_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_livraisons": {
+                        "type": "integer"
+                    },
+                    "accompagnements_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_accompagnements": {
+                        "type": "integer"
+                    },
+                    "generations_ia_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_generations_ia": {
+                        "type": "integer"
+                    },
+                    "revenus_plateforme_fcfa": {
+                        "type": "integer"
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "accompagnements_par_statut",
+                    "chiffre_affaires_fcfa",
+                    "commandes_par_statut",
+                    "generations_ia_par_statut",
+                    "livraisons_par_statut",
+                    "periode",
+                    "remboursements",
+                    "revenus_plateforme_fcfa",
+                    "serie",
+                    "total_accompagnements",
+                    "total_commandes",
+                    "total_generations_ia",
+                    "total_livraisons",
+                    "total_utilisateurs",
+                    "utilisateurs_par_role"
+                ]
+            },
+            "PointSerie": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "type": "string",
+                        "description": "Clé ISO : AAAA-MM-JJ, AAAA-SSnn ou AAAA-MM."
+                    },
+                    "nombre": {
+                        "type": "integer"
+                    },
+                    "montant_fcfa": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "montant_fcfa",
+                    "nombre",
+                    "periode"
                 ]
             },
             "PositionLivreurRequest": {
@@ -9524,6 +10569,26 @@
                     "nom",
                     "prix_unitaire_fcfa",
                     "unite"
+                ]
+            },
+            "ProduitPopulaire": {
+                "type": "object",
+                "properties": {
+                    "nom_produit": {
+                        "type": "string"
+                    },
+                    "unites": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "total_fcfa": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "nom_produit",
+                    "total_fcfa",
+                    "unites"
                 ]
             },
             "ProduitStatutEnum": {
@@ -9856,6 +10921,21 @@
                     "motif"
                 ]
             },
+            "Remboursements": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "integer"
+                    },
+                    "montant_effectue_fcfa": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "montant_effectue_fcfa",
+                    "nombre"
+                ]
+            },
             "ReponseMessage": {
                 "type": "object",
                 "description": "Réponse neutre uniforme (demande de réinitialisation, Q-23).",
@@ -9929,7 +11009,7 @@
                         "nullable": true,
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/Operateur370Enum"
+                                "$ref": "#/components/schemas/OperateurPaiementEnum"
                             },
                             {
                                 "$ref": "#/components/schemas/NullEnum"
@@ -10303,7 +11383,7 @@
                     "solde"
                 ]
             },
-            "Statut86dEnum": {
+            "StatutAccompagnementEnum": {
                 "enum": [
                     "demandee",
                     "acceptee",
@@ -10468,6 +11548,14 @@
                 "type": "string",
                 "description": "* `en_examen` - En examen\n* `clos_fonde` - Closé — fondé\n* `clos_non_fonde` - Closé — non fondé"
             },
+            "TypeConversationEnum": {
+                "enum": [
+                    "commande",
+                    "accompagnement"
+                ],
+                "type": "string",
+                "description": "* `commande` - Commande\n* `accompagnement` - Accompagnement"
+            },
             "TypeGenerationEnum": {
                 "enum": [
                     "planning",
@@ -10503,10 +11591,11 @@
                     "accompagnement",
                     "abonnement",
                     "administration",
-                    "signalement"
+                    "signalement",
+                    "chat"
                 ],
                 "type": "string",
-                "description": "* `commande` - Commande\n* `paiement` - Paiement\n* `livraison` - Livraison\n* `accompagnement` - Accompagnement\n* `abonnement` - Abonnement\n* `administration` - Administration\n* `signalement` - Signalement"
+                "description": "* `commande` - Commande\n* `paiement` - Paiement\n* `livraison` - Livraison\n* `accompagnement` - Accompagnement\n* `abonnement` - Abonnement\n* `administration` - Administration\n* `signalement` - Signalement\n* `chat` - Chat"
             },
             "Utilisateur": {
                 "type": "object",
