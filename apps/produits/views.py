@@ -2,6 +2,7 @@
 
 from typing import Any, cast
 
+from commun.cache_http import CachePublicMixin
 from commun.pagination import reponse_liste, schema_enveloppe_liste
 from commun.permissions import ARole
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -39,8 +40,10 @@ def _entier_positif_ou_nul(valeur: str | None) -> int | None:
     return nombre if nombre >= 0 else None
 
 
-class VueProduits(APIView):
+class VueProduits(CachePublicMixin, APIView):
     """POST /produits (publication, agriculteur) et GET /produits (catalogue public)."""
+
+    cache_max_age = 60  # F-15 : cache HTTP catalogue
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -108,13 +111,15 @@ class VueMesProduits(APIView):
         return reponse_liste(request, produits, ProduitSerializer)
 
 
-class VueProduitDetail(APIView):
+class VueProduitDetail(CachePublicMixin, APIView):
     """GET /produits/{id} et PATCH /produits/{id}.
 
     GET : le propriétaire reçoit la vue complète (y compris `epuise` et
     `retire` pour gérer son stock) ; tout autre visiteur reçoit la vue
     publique, 404 si le produit n'est pas au catalogue. PATCH : propriétaire.
     """
+
+    cache_max_age = 30  # F-15 : cache HTTP court sur détail produit
 
     def get_permissions(self):
         if self.request.method == "PATCH":
