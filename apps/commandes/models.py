@@ -71,6 +71,11 @@ class Commande(ModeleBase):
             models.Index(fields=["acheteur", "statut"], name="commande_ach_statut_idx"),
             models.Index(fields=["agriculteur", "statut"], name="commande_agri_statut_idx"),
             models.Index(fields=["statut", "expire_le"], name="commande_statut_expire_idx"),
+            # F-14 : agrégats de ventes par agriculteur filtrés sur une période.
+            models.Index(
+                fields=["agriculteur", "statut", "cree_le"],
+                name="commande_agri_statut_cree_idx",
+            ),
         ]
         constraints = [
             models.CheckConstraint(

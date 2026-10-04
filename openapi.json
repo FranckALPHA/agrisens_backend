@@ -5735,6 +5735,214 @@
                 }
             }
         },
+        "/api/v1/statistiques/mes-accompagnements/": {
+            "get": {
+                "operationId": "statistiques_mes_accompagnements",
+                "summary": "Statistiques d'accompagnements de l'ingénieur connecté",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MesAccompagnements"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/statistiques/mes-livraisons/": {
+            "get": {
+                "operationId": "statistiques_mes_livraisons",
+                "summary": "Statistiques de livraisons du livreur connecté",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MesLivraisons"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/statistiques/mes-ventes/": {
+            "get": {
+                "operationId": "statistiques_mes_ventes",
+                "summary": "Statistiques de ventes de l'agriculteur connecté",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MesVentes"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/statistiques/plateforme/": {
+            "get": {
+                "operationId": "statistiques_plateforme",
+                "summary": "Statistiques globales de la plateforme (admin / super-admin)",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "au",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de fin inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "du",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Date de début inclusive (AAAA-MM-JJ)."
+                    },
+                    {
+                        "in": "query",
+                        "name": "granularite",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Granularité de la série : jour, semaine ou mois (défaut : mois)."
+                    }
+                ],
+                "tags": [
+                    "statistiques"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Plateforme"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/utilisateurs/moi/": {
             "get": {
                 "operationId": "utilisateurs_moi_retrieve",
@@ -6134,7 +6342,7 @@
                     "statut": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Statut86dEnum"
+                                "$ref": "#/components/schemas/StatutAccompagnementEnum"
                             }
                         ],
                         "readOnly": true
@@ -6343,7 +6551,7 @@
                     "statut": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Statut86dEnum"
+                                "$ref": "#/components/schemas/StatutAccompagnementEnum"
                             }
                         ],
                         "readOnly": true
@@ -7018,7 +7226,7 @@
                 "description": "POST /{id}/confirmer — l'agriculteur accepte le montant et paie.",
                 "properties": {
                     "operateur": {
-                        "$ref": "#/components/schemas/Operateur370Enum"
+                        "$ref": "#/components/schemas/OperateurPaiementEnum"
                     },
                     "telephone": {
                         "type": "string",
@@ -8982,6 +9190,80 @@
                     "absent"
                 ]
             },
+            "MesAccompagnements": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "nombre_accompagnements": {
+                        "type": "integer"
+                    },
+                    "accompagnements_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "terminees": {
+                        "type": "integer"
+                    },
+                    "revenu_net_fcfa": {
+                        "type": "integer"
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "accompagnements_par_statut",
+                    "nombre_accompagnements",
+                    "periode",
+                    "revenu_net_fcfa",
+                    "serie",
+                    "terminees"
+                ]
+            },
+            "MesLivraisons": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "nombre_livraisons": {
+                        "type": "integer"
+                    },
+                    "livraisons_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "livrees": {
+                        "type": "integer"
+                    },
+                    "frais_cumules_fcfa": {
+                        "type": "integer"
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "frais_cumules_fcfa",
+                    "livraisons_par_statut",
+                    "livrees",
+                    "nombre_livraisons",
+                    "periode",
+                    "serie"
+                ]
+            },
             "MesProduits": {
                 "type": "object",
                 "properties": {
@@ -9006,6 +9288,52 @@
                     "page",
                     "taille",
                     "total"
+                ]
+            },
+            "MesVentes": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "nombre_ventes": {
+                        "type": "integer"
+                    },
+                    "chiffre_affaires_brut_fcfa": {
+                        "type": "integer"
+                    },
+                    "commissions_fcfa": {
+                        "type": "integer"
+                    },
+                    "revenu_net_fcfa": {
+                        "type": "integer"
+                    },
+                    "quantite_totale": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "produits_populaires": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProduitPopulaire"
+                        }
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "chiffre_affaires_brut_fcfa",
+                    "commissions_fcfa",
+                    "nombre_ventes",
+                    "periode",
+                    "produits_populaires",
+                    "quantite_totale",
+                    "revenu_net_fcfa",
+                    "serie"
                 ]
             },
             "Message": {
@@ -9331,14 +9659,6 @@
                     "quota_planning_mois",
                     "quota_recommandation_mois"
                 ]
-            },
-            "Operateur370Enum": {
-                "enum": [
-                    "mtn_momo",
-                    "orange_money"
-                ],
-                "type": "string",
-                "description": "* `mtn_momo` - MTN\n* `orange_money` - Orange"
             },
             "OperateurPaiementEnum": {
                 "enum": [
@@ -9718,6 +10038,19 @@
                     }
                 }
             },
+            "Periode": {
+                "type": "object",
+                "properties": {
+                    "du": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "au": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            },
             "PhotoAjout": {
                 "type": "object",
                 "description": "POST /produits/{id}/photos — rattache un fichier déjà téléversé.",
@@ -9878,6 +10211,111 @@
                     "culture",
                     "periode_debut",
                     "periode_fin"
+                ]
+            },
+            "Plateforme": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "$ref": "#/components/schemas/Periode"
+                    },
+                    "utilisateurs_par_role": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_utilisateurs": {
+                        "type": "integer"
+                    },
+                    "commandes_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_commandes": {
+                        "type": "integer"
+                    },
+                    "chiffre_affaires_fcfa": {
+                        "type": "integer"
+                    },
+                    "remboursements": {
+                        "$ref": "#/components/schemas/Remboursements"
+                    },
+                    "livraisons_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_livraisons": {
+                        "type": "integer"
+                    },
+                    "accompagnements_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_accompagnements": {
+                        "type": "integer"
+                    },
+                    "generations_ia_par_statut": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "total_generations_ia": {
+                        "type": "integer"
+                    },
+                    "revenus_plateforme_fcfa": {
+                        "type": "integer"
+                    },
+                    "serie": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PointSerie"
+                        }
+                    }
+                },
+                "required": [
+                    "accompagnements_par_statut",
+                    "chiffre_affaires_fcfa",
+                    "commandes_par_statut",
+                    "generations_ia_par_statut",
+                    "livraisons_par_statut",
+                    "periode",
+                    "remboursements",
+                    "revenus_plateforme_fcfa",
+                    "serie",
+                    "total_accompagnements",
+                    "total_commandes",
+                    "total_generations_ia",
+                    "total_livraisons",
+                    "total_utilisateurs",
+                    "utilisateurs_par_role"
+                ]
+            },
+            "PointSerie": {
+                "type": "object",
+                "properties": {
+                    "periode": {
+                        "type": "string",
+                        "description": "Clé ISO : AAAA-MM-JJ, AAAA-SSnn ou AAAA-MM."
+                    },
+                    "nombre": {
+                        "type": "integer"
+                    },
+                    "montant_fcfa": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "montant_fcfa",
+                    "nombre",
+                    "periode"
                 ]
             },
             "PositionLivreurRequest": {
@@ -10131,6 +10569,26 @@
                     "nom",
                     "prix_unitaire_fcfa",
                     "unite"
+                ]
+            },
+            "ProduitPopulaire": {
+                "type": "object",
+                "properties": {
+                    "nom_produit": {
+                        "type": "string"
+                    },
+                    "unites": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "total_fcfa": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "nom_produit",
+                    "total_fcfa",
+                    "unites"
                 ]
             },
             "ProduitStatutEnum": {
@@ -10463,6 +10921,21 @@
                     "motif"
                 ]
             },
+            "Remboursements": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "integer"
+                    },
+                    "montant_effectue_fcfa": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "montant_effectue_fcfa",
+                    "nombre"
+                ]
+            },
             "ReponseMessage": {
                 "type": "object",
                 "description": "Réponse neutre uniforme (demande de réinitialisation, Q-23).",
@@ -10536,7 +11009,7 @@
                         "nullable": true,
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/Operateur370Enum"
+                                "$ref": "#/components/schemas/OperateurPaiementEnum"
                             },
                             {
                                 "$ref": "#/components/schemas/NullEnum"
@@ -10910,7 +11383,7 @@
                     "solde"
                 ]
             },
-            "Statut86dEnum": {
+            "StatutAccompagnementEnum": {
                 "enum": [
                     "demandee",
                     "acceptee",

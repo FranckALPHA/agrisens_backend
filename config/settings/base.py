@@ -157,6 +157,7 @@ INSTALLED_APPS = [
     "apps.accompagnements.apps.AccompagnementsConfig",
     "apps.plannings.apps.PlanningsConfig",
     "apps.conversations.apps.ConversationsConfig",
+    "apps.statistiques.apps.StatistiquesConfig",
 ]
 
 MIDDLEWARE = [
@@ -274,6 +275,7 @@ SPECTACULAR_SETTINGS = {
         "TypeNotificationEnum": "apps.notifications.models.TypeNotification",
         "TypeJustificatifEnum": "apps.profils.models.TypeJustificatif",
         "StatutCommandeEnum": "apps.commandes.models.StatutCommande",
+        "StatutAccompagnementEnum": "apps.accompagnements.models.StatutAccompagnement",
         "StatutLivraisonEnum": "apps.livraisons.models.StatutLivraison",
         "TypeIncidentEnum": "apps.livraisons.models.TypeIncident",
         "OperateurPaiementEnum": "apps.paiements.models.OperateurPaiement",
