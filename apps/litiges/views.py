@@ -56,9 +56,9 @@ class VueRemboursements(APIView):
 
 
 class VueMesRemboursements(APIView):
-    """GET /remboursements/mes-demandes — suivi par l'acheteur."""
+    """GET /remboursements/mes-demandes — suivi par le demandeur (acheteur ou agriculteur, F-11)."""
 
-    permission_classes = [ARole("acheteur")]
+    permission_classes = [ARole("acheteur", "agriculteur")]
 
     @extend_schema(
         summary="Mes demandes de remboursement",

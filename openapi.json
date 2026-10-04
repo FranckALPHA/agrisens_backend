@@ -5546,7 +5546,7 @@
         "/api/v1/remboursements/mes-demandes/": {
             "get": {
                 "operationId": "remboursements_mes_demandes_list",
-                "description": "GET /remboursements/mes-demandes — suivi par l'acheteur.",
+                "description": "GET /remboursements/mes-demandes — suivi par le demandeur (acheteur ou agriculteur, F-11).",
                 "summary": "Mes demandes de remboursement",
                 "tags": [
                     "remboursements"
