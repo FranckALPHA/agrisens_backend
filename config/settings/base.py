@@ -113,7 +113,7 @@ NOTCHPAY_SECRET_WEBHOOK = env.str("NOTCHPAY_SECRET_WEBHOOK")
 # mode étant déterminé par les clés (sandbox.notchpay.co n'existe pas).
 NOTCHPAY_URL_BASE = env.str("NOTCHPAY_URL_BASE", default="https://api.notchpay.co")
 
-# IA Groq
+# IA (Groq / OpenRouter, API compatible OpenAI — journal Q-07 / Q-47)
 IA_FOURNISSEUR = env.str("IA_FOURNISSEUR", default="factice")
 IA_URL_BASE = env.str("IA_URL_BASE", default="https://api.groq.com/openai/v1")
 IA_CLE_API = env.str("IA_CLE_API", default="")

@@ -320,7 +320,7 @@ class ServiceGeneration:
     def _modele_initial(fournisseur: FournisseurIA) -> str:
         from django.conf import settings
 
-        return getattr(settings, "IA_MODELE", "") if fournisseur.nom == "groq" else "factice"
+        return getattr(settings, "IA_MODELE", "") if fournisseur.nom != "factice" else "factice"
 
     @staticmethod
     def _culture_pour(

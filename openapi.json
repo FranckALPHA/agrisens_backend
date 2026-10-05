@@ -4776,6 +4776,30 @@
                             "type": "boolean"
                         },
                         "description": "Filtrer sur les non lues"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Numéro de page (défaut 1)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "taille",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Taille de page (1-100)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filtrer par catégorie (commande, paiement, livraison, accompagnement, abonnement, administration, signalement)"
                     }
                 ],
                 "tags": [
@@ -4908,6 +4932,85 @@
                         "schema": {
                             "type": "string",
                             "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "paiements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Paiement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "description": "Paiement introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/paiements/{identifiant}/verifier/": {
+            "post": {
+                "operationId": "paiements_verifier_create",
+                "description": "Interroge l’API NotchPay pour synchroniser le statut.Utile en local quand le webhook ne peut pas atteindre le serveur.",
+                "summary": "Vérifier le statut d’un paiement auprès de la passerelle",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "identifiant",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f-]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "paiements"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Paiement"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/paiements/par-reference/{reference}/": {
+            "get": {
+                "operationId": "paiements_par_reference_retrieve",
+                "description": "GET /paiements/par-reference/<reference>/ — lookup par ref interne (callback NotchPay).",
+                "summary": "Consulter un paiement par référence interne",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "reference",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^PAY-\\d{4}-\\d{6}$"
                         },
                         "required": true
                     }

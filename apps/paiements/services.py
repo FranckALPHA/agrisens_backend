@@ -254,6 +254,74 @@ class ServicePaiement:
             raise NonTrouve()
         return paiement
 
+    @staticmethod
+    def obtenir_paiement_par_reference(utilisateur: Any, reference: str) -> Paiement:
+        """Retrouve un paiement par sa référence interne (callback NotchPay)."""
+        paiement = Paiement.objects.filter(reference_interne=reference).first()
+        if paiement is None:
+            raise NonTrouve()
+        if paiement.payeur_id != getattr(utilisateur, "id", None) and getattr(
+            utilisateur, "role", None
+        ) not in (RoleUtilisateur.ADMIN, RoleUtilisateur.SUPER_ADMIN):
+            raise NonTrouve()
+        return paiement
+
+    @staticmethod
+    @transaction.atomic
+    def verifier_aupres_passerelle(paiement_id: str) -> Paiement:
+        """Interroge l’API NotchPay pour synchroniser le statut d’un paiement en_attente.
+
+        Utilisé en local quand le webhook ne peut pas atteindre le serveur.
+        Retourne le paiement mis à jour.
+        """
+        paiement = (
+            Paiement.objects.select_for_update().filter(id=paiement_id).first()
+        )
+        if paiement is None:
+            raise NonTrouve()
+        if paiement.statut not in (StatutPaiement.EN_ATTENTE, StatutPaiement.INITIE):
+            return paiement  # déjà finalisé, rien à faire
+        if not paiement.reference_notchpay:
+            return paiement
+        passerelle = passerelle_paiement()
+        try:
+            statut = passerelle.verifier_statut(str(paiement.reference_notchpay))
+        except ErreurFournisseur:
+            return paiement  # erreur réseau : on garde l’état local
+        if statut == "reussi":
+            paiement.statut = StatutPaiement.REUSSI
+            paiement.confirme_le = maintenant()
+            paiement.save(update_fields=["statut", "confirme_le", "maj_le"])
+            # Notifier la commande ou l’accompagnement
+            if paiement.commande_id:
+                from apps.commandes.models import Commande
+                from apps.commandes.services import ServiceCommande
+
+                commande = Commande.objects.filter(id=paiement.commande_id).first()
+                if commande is not None:
+                    taux, commission = _commission_figee(commande)
+                    ServiceCommande.noter_paiement(str(commande.id), taux, commission)
+                    publier(
+                        PaiementReussi(
+                            paiement_id=str(paiement.id),
+                            commande_id=str(commande.id),
+                            montant_fcfa=paiement.montant_fcfa,
+                        )
+                    )
+            elif paiement.accompagnement_id:
+                publier(
+                    PaiementReussi(
+                        paiement_id=str(paiement.id),
+                        commande_id="",
+                        accompagnement_id=str(paiement.accompagnement_id),
+                        montant_fcfa=paiement.montant_fcfa,
+                    )
+                )
+        elif statut in ("echoue", "expire"):
+            paiement.statut = StatutPaiement(statut)
+            paiement.save(update_fields=["statut", "maj_le"])
+        return paiement
+
     # --- Webhooks ----------------------------------------------------------
 
     @staticmethod

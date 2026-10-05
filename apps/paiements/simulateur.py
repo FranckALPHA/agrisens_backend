@@ -13,7 +13,6 @@ from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 
-from apps.commandes.models import Commande
 from apps.paiements.models import Paiement
 from apps.paiements.passerelle import EN_TETE_SIGNATURE, signer_webhook
 from apps.paiements.services import ServicePaiement
@@ -39,21 +38,35 @@ def _page(titre: str, corps: str) -> HttpResponse:
 
 def _paiement_ou_404(reference: str) -> Paiement | None:
     try:
-        return Paiement.objects.select_related("commande").get(reference_interne=reference)
+        return Paiement.objects.select_related(
+            "commande", "accompagnement"
+        ).get(reference_interne=reference)
     except Paiement.DoesNotExist:
         return None
 
 
+def _libelle_cible(paiement: Paiement) -> str:
+    """Référence humaine affichée dans le simulateur : commande, abonnement
+    ou accompagnement. F-07 : seul l'objet `commande` existe ; F-11 ajoute
+    `accompagnement` ; F-17 ajoutera `abonnement`."""
+    if paiement.commande_id and paiement.commande is not None:
+        return f"commande {paiement.commande.reference}"
+    if paiement.accompagnement_id and paiement.accompagnement is not None:
+        acc = paiement.accompagnement
+        return f"accompagnement {acc.motif}"
+    if paiement.abonnement:
+        return f"abonnement {paiement.abonnement}"
+    return "paiement isolé"
+
+
 def page_simulateur(requete: HttpRequest, reference: str) -> HttpResponse:
     paiement = _paiement_ou_404(reference)
-    if paiement is None or paiement.commande_id is None:
+    if paiement is None:
         return HttpResponseNotFound("Paiement introuvable.")
-    commande = Commande.objects.filter(id=paiement.commande_id).first()
-    if commande is None:
-        return HttpResponseNotFound("Paiement introuvable.")
+    cible = _libelle_cible(paiement)
     corps = (
         f"<p class='montant'>{paiement.montant_fcfa} FCFA</p>"
-        f"<p>Référence {paiement.reference_interne} — commande {commande.reference}</p>"
+        f"<p>Référence {paiement.reference_interne} — {cible}</p>"
         f"<p class='note'>Simulation locale NotchPay : aucun argent ne circule.</p>"
         f"<form method='post'>"
         f"<button class='ok' type='submit' name='resultat' value='reussi'>Paiement réussi</button>"

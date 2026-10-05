@@ -2,8 +2,9 @@
 
 Deux implémentations derrière une même interface `FournisseurIA` :
 
-- `FournisseurGroq` : appel HTTP **synchrone** (httpx) vers l'endpoint
-  OpenAI-compatible `chat/completions` de Groq, sortie JSON contrainte, une
+- `FournisseurOpenAICompat` (alias `FournisseurGroq`) : appel HTTP **synchrone**
+  (httpx) vers l'endpoint OpenAI-compatible `chat/completions` de Groq ou
+  d'OpenRouter, sortie JSON contrainte, une
   nouvelle tentative sur erreur réseau ou 5xx, gestion du 429 via `Retry-After`
   ; le modèle vient toujours de `settings.IA_MODELE` (jamais en dur) ;
 - `FournisseurFactice` : aucun réseau, déterministe, trois modes stables
@@ -69,8 +70,13 @@ class FournisseurIA(ABC):
         raise NotImplementedError
 
 
-class FournisseurGroq(FournisseurIA):
-    """Appel réel à Groq via l'API compatible OpenAI (httpx synchrone)."""
+class FournisseurOpenAICompat(FournisseurIA):
+    """Appel réel à un fournisseur compatible OpenAI (httpx synchrone).
+
+    Utilisé pour Groq (`nom = "groq"`) comme pour OpenRouter (`nom =
+    "openrouter"`) : les deux exposent la même route `chat/completions`, la
+    même authentification `Bearer` et le même mode JSON (journal Q-07 / Q-47).
+    """
 
     nom = "groq"
 
@@ -80,11 +86,14 @@ class FournisseurGroq(FournisseurIA):
         url_base: str,
         cle_api: str,
         modele: str,
+        nom: str | None = None,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.url_base = url_base.rstrip("/")
         self.cle_api = cle_api
         self.modele = modele
+        if nom is not None:
+            self.nom = nom
         self._transport = transport
 
     def generer(
@@ -124,7 +133,7 @@ class FournisseurGroq(FournisseurIA):
             if tentative == 0:
                 time.sleep(2)
         return derniere if derniere is not None else ErreurIA(
-            code="erreur_fournisseur", message="Échec inconnu de l'appel Groq."
+            code="erreur_fournisseur", message="Échec inconnu de l'appel IA."
         )
 
     def _appel_unique(
@@ -323,19 +332,28 @@ def _fabrique_recommandation(entrees: dict[str, Any]) -> dict[str, Any]:
 def obtenir_fournisseur() -> FournisseurIA:
     """Fabrique le fournisseur configuré (défaut : factice).
 
-    `groq` exige `IA_CLE_API` non vide ; sinon on élève une erreur claire afin
-    de ne jamais retomber silencieusement sur le factice en production.
+    `groq` et `openrouter` sont deux fournisseurs compatibles OpenAI : même
+    adaptateur `FournisseurOpenAICompat`, seuls l'URL de base, la clé et le
+    modèle changent (journal Q-07 / Q-47). Ils exigent `IA_CLE_API` non vide ;
+    sinon on élève une erreur claire afin de ne jamais retomber silencieusement
+    sur le factice en production.
     """
     choix = getattr(settings, "IA_FOURNISSEUR", "factice")
-    if choix == "groq":
+    if choix in ("groq", "openrouter"):
         cle = getattr(settings, "IA_CLE_API", "")
         if not cle:
             raise RuntimeError(
-                "IA_FOURNISSEUR=groq mais IA_CLE_API est vide : configuration invalide."
+                f"IA_FOURNISSEUR={choix} mais IA_CLE_API est vide : configuration invalide."
             )
-        return FournisseurGroq(
+        return FournisseurOpenAICompat(
             url_base=settings.IA_URL_BASE,
             cle_api=cle,
             modele=settings.IA_MODELE,
+            nom=choix,
         )
     return FournisseurFactice()
+
+
+# Alias historique : `FournisseurGroq` désigne désormais l'adaptateur générique
+# compatible OpenAI (gardé pour `scripts/tester_groq.py` et les imports anciens).
+FournisseurGroq = FournisseurOpenAICompat

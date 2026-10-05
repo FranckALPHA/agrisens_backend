@@ -15,7 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.notifications.models import Notification
+from apps.notifications.models import Notification, TypeNotification
 from apps.notifications.serializers import NotificationSerializer
 from apps.notifications.services import marquer_lue, tout_marquer_lu
 from apps.utilisateurs.models import Utilisateur
@@ -39,6 +39,14 @@ class VueListeNotifications(APIView):
         summary="Lister ses notifications",
         parameters=[
             OpenApiParameter("non_lues", OpenApiTypes.BOOL, description="Filtrer sur les non lues"),
+            OpenApiParameter(
+                "type",
+                OpenApiTypes.STR,
+                description="Filtrer par catégorie (commande, paiement, livraison, "
+                "accompagnement, abonnement, administration, signalement)",
+            ),
+            OpenApiParameter("page", OpenApiTypes.INT, description="Numéro de page (défaut 1)"),
+            OpenApiParameter("taille", OpenApiTypes.INT, description="Taille de page (1-100)"),
         ],
         responses={200: LISTE_NOTIFICATIONS},
     )
@@ -47,6 +55,10 @@ class VueListeNotifications(APIView):
         filtre = request.query_params.get("non_lues", "").lower()
         if filtre in ("1", "true", "oui"):
             queryset = queryset.filter(lue_le__isnull=True)
+        # F-03 FE-05 — filtre par catégorie pour la page de liste.
+        categorie = request.query_params.get("type", "").strip()
+        if categorie and categorie != "toutes" and categorie in TypeNotification.values:
+            queryset = queryset.filter(type=categorie)
         return reponse_liste(request, queryset, NotificationSerializer)
 
 

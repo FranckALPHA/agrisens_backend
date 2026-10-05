@@ -59,6 +59,46 @@ class VuePaiementDetail(APIView):
         )
 
 
+class VuePaiementParReference(APIView):
+    """GET /paiements/par-reference/<reference>/ — lookup par ref interne (callback NotchPay)."""
+
+    permission_classes = [EstAuthentifieEtActif]
+
+    @extend_schema(
+        summary="Consulter un paiement par référence interne",
+        responses={
+            200: PaiementSerializer,
+            404: OpenApiResponse(description="Paiement introuvable"),
+        },
+    )
+    def get(self, request: Request, reference: str) -> Response:
+        return Response(
+            PaiementSerializer(
+                ServicePaiement.obtenir_paiement_par_reference(request.user, reference)
+            ).data
+        )
+
+
+class VuePaiementVerifier(APIView):
+    """POST /paiements/{id}/verifier/ — force une vérification gateway (local / secours webhook)."""
+
+    permission_classes = [EstAuthentifieEtActif]
+
+    @extend_schema(
+        summary="Vérifier le statut d’un paiement auprès de la passerelle",
+        description=(
+            "Interroge l’API NotchPay pour synchroniser le statut."
+            "Utile en local quand le webhook ne peut pas atteindre le serveur."
+        ),
+        request=None,
+        responses={200: PaiementSerializer},
+    )
+    def post(self, request: Request, identifiant: str) -> Response:
+        paiement = ServicePaiement.obtenir_paiement(request.user, identifiant)
+        mis_a_jour = ServicePaiement.verifier_aupres_passerelle(str(paiement.id))
+        return Response(PaiementSerializer(mis_a_jour).data)
+
+
 class VueWebhookNotchpay(APIView):
     """POST /webhooks/notchpay — UNIQUE point d'entrée des confirmations.
 

@@ -184,6 +184,42 @@ def test_notification_d_autrui_invisible_404(client_authentifie: Any) -> None:
     assert client_b.get(NOTIFICATIONS).json()["total"] == 0
 
 
+@pytest.mark.integration
+def test_notifications_filtre_type_et_pagination(client_authentifie: Any) -> None:
+    """FE-05 — le filtre `type` et la pagination `page/taille` sont côté serveur."""
+    client, amina = client_authentifie(role="acheteur")
+    for _ in range(3):
+        notifier(amina, "commande", "Commande")
+    for _ in range(2):
+        notifier(amina, "paiement", "Paiement")
+    notifier(amina, "livraison", "Livraison")
+
+    # Filtre catégorie.
+    commandes = client.get(f"{NOTIFICATIONS}?type=commande").json()
+    assert commandes["total"] == 3
+    assert all(n["type"] == "commande" for n in commandes["elements"])
+
+    paiements = client.get(f"{NOTIFICATIONS}?type=paiement").json()
+    assert paiements["total"] == 2
+
+    # `type=toutes` = aucun filtre.
+    toutes = client.get(f"{NOTIFICATIONS}?type=toutes").json()
+    assert toutes["total"] == 6
+
+    # Pagination serveur.
+    page1 = client.get(f"{NOTIFICATIONS}?page=1&taille=2").json()
+    assert page1["total"] == 6 and len(page1["elements"]) == 2 and page1["page"] == 1
+    page2 = client.get(f"{NOTIFICATIONS}?page=2&taille=2").json()
+    assert page2["page"] == 2 and len(page2["elements"]) == 2
+    ids1 = {n["id"] for n in page1["elements"]}
+    ids2 = {n["id"] for n in page2["elements"]}
+    assert ids1.isdisjoint(ids2), "Les pages 1 et 2 ne doivent pas se recouvrir"
+
+    # Combinaison filtre catégorie + non lues.
+    combo = client.get(f"{NOTIFICATIONS}?type=commande&non_lues=true&taille=1").json()
+    assert combo["total"] == 3 and len(combo["elements"]) == 1
+
+
 # --- Profils et validation ------------------------------------------------------------
 
 

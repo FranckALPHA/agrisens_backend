@@ -1,6 +1,12 @@
 from django.urls import re_path
 
-from apps.paiements.views import VueInitierPaiement, VuePaiementDetail, VueWebhookNotchpay
+from apps.paiements.views import (
+    VueInitierPaiement,
+    VuePaiementDetail,
+    VuePaiementParReference,
+    VuePaiementVerifier,
+    VueWebhookNotchpay,
+)
 from apps.paiements.views_f10 import (
     VueAdminReversements,
     VueAdminSoldes,
@@ -17,6 +23,16 @@ urlpatterns = [
         r"^paiements/(?P<identifiant>[0-9a-f-]+)/?$",
         VuePaiementDetail.as_view(),
         name="paiement_detail",
+    ),
+    re_path(
+        r"^paiements/par-reference/(?P<reference>PAY-\d{4}-\d{6})/?$",
+        VuePaiementParReference.as_view(),
+        name="paiement_par_reference",
+    ),
+    re_path(
+        r"^paiements/(?P<identifiant>[0-9a-f-]+)/verifier/?$",
+        VuePaiementVerifier.as_view(),
+        name="paiement_verifier",
     ),
     re_path(
         r"^webhooks/notchpay/?$",
